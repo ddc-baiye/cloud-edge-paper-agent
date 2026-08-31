@@ -20,6 +20,7 @@ uploads/
 CLOUD/input/
 CLOUD/out/
 CLOUD/uploads/
+CLOUD/extra_input/
 CLOUD/extra_chunks/
 CLOUD/chunks/**
 !CLOUD/chunks/lunwen/
