@@ -129,7 +129,7 @@ function Export-HuggingFaceModelToOpenVinoInt4(
         $env:HF_HOME = $hfCache
         & $uv.Source run `
             --with 'optimum-intel[openvino]' `
-            --with 'transformers>=4.56,<5.1' `
+            --with 'transformers>=4.56,<5.0' `
             --with torch `
             --with accelerate `
             optimum-cli export openvino `
@@ -137,7 +137,6 @@ function Export-HuggingFaceModelToOpenVinoInt4(
             --task text-generation-with-past `
             --weight-format int4 `
             --trust-remote-code `
-            --cache_dir $hfCache `
             $Destination
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to export $DisplayName to OpenVINO INT4."
