@@ -1,0 +1,58 @@
+services:
+  paperagent-retriever:
+    build:
+      context: ../..
+      dockerfile: CLOUD/opea/Dockerfile
+    container_name: paperagent-opea-retriever
+    command: ["python", "/app/CLOUD/opea/retriever_service.py"]
+    ports:
+      - "${PAPERAGENT_RETRIEVER_PORT:-7011}:7011"
+    environment:
+      PAPERAGENT_RETRIEVER_PORT: "7011"
+      PAPERAGENT_TOP_K: "${PAPERAGENT_TOP_K:-3}"
+      PAPERAGENT_RETRIEVER_TEXT_CHARS: "${PAPERAGENT_RETRIEVER_TEXT_CHARS:-5000}"
+      LOGFLAG: "${LOGFLAG:-False}"
+    volumes:
+      - ../chunks:/app/CLOUD/chunks:ro
+      - paperagent-extra-chunks:/app/CLOUD/extra_chunks
+    restart: unless-stopped
+
+  opea-llm:
+    image: "${OPEA_LLM_IMAGE:-opea/llm-textgen:latest}"
+    container_name: paperagent-opea-llm
+    ports:
+      - "${PAPERAGENT_LLM_PORT:-9000}:9000"
+    environment:
+      LLM_COMPONENT_NAME: OpeaTextGenService
+      LLM_ENDPOINT: "${LLM_ENDPOINT}"
+      LLM_MODEL_ID: "${LLM_MODEL_ID}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      LOGFLAG: "${LOGFLAG:-False}"
+      no_proxy: "${no_proxy:-localhost,127.0.0.1}"
+      http_proxy: "${http_proxy:-}"
+      https_proxy: "${https_proxy:-}"
+    restart: unless-stopped
+
+  paperagent-megaservice:
+    build:
+      context: ../..
+      dockerfile: CLOUD/opea/Dockerfile
+    container_name: paperagent-opea-megaservice
+    command: ["python", "/app/CLOUD/opea/megaservice.py"]
+    ports:
+      - "${PAPERAGENT_OPEA_GATEWAY_PORT:-7008}:7008"
+    environment:
+      PAPERAGENT_OPEA_GATEWAY_PORT: "7008"
+      PAPERAGENT_RETRIEVER_HOST: paperagent-retriever
+      PAPERAGENT_RETRIEVER_PORT: "7011"
+      PAPERAGENT_LLM_HOST: opea-llm
+      PAPERAGENT_LLM_PORT: "9000"
+      LLM_MODEL_ID: "${LLM_MODEL_ID}"
+      LOGFLAG: "${LOGFLAG:-False}"
+    depends_on:
+      - paperagent-retriever
+      - opea-llm
+    restart: unless-stopped
+
+volumes:
+  paperagent-extra-chunks:
