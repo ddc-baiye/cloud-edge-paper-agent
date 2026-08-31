@@ -74,9 +74,10 @@ def build_ui(cfg_path: str):
                     response.raise_for_status()
                     payload = response.json()
                 answer = _extract_opea_answer(payload)
-                prefix = ('**OPEA Pipeline:** PaperAgent Retriever → OPEA LLM TextGen → MegaService\n\n---\n\n'
-                          if lang == 'zh' else
-                          '**OPEA Pipeline:** PaperAgent Retriever → OPEA LLM TextGen → MegaService\n\n---\n\n')
+                prefix = (
+                    '**OPEA Pipeline:** PaperAgent Retriever → PaperAgent Prompt Builder → '
+                    'OPEA LLM TextGen → PaperAgent MegaService\n\n---\n\n'
+                )
                 yield prefix + answer
                 return
             except Exception as exc:
