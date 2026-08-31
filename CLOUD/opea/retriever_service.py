@@ -1,9 +1,8 @@
 """PaperAgent domain retriever implemented as an OPEA MicroService.
 
-This service intentionally reuses the sanitized PaperAgent JSONL corpus and the
-existing lexical retrieval logic. It exposes the standard OPEA retrieval
-endpoint and returns ``SearchedDoc`` so it can be connected directly to the
-official OPEA LLM TextGen microservice.
+This service reuses the sanitized PaperAgent JSONL corpus and the existing
+lexical retrieval logic. It exposes the standard OPEA retrieval endpoint and
+returns ``SearchedDoc`` for the downstream PaperAgent prompt MicroService.
 """
 
 import os
