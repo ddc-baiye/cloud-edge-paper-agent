@@ -47,13 +47,13 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo [Config] Checking OPEA MegaService...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:7008/health' -TimeoutSec 2; if($r.StatusCode -ge 200 -and $r.StatusCode -lt 300){exit 0}else{exit 1} } catch { exit 1 }"
+echo [Config] Checking PaperAgent OPEA MegaService...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $t=Invoke-RestMethod -Uri 'http://127.0.0.1:7008/v1/topology' -TimeoutSec 3; $expected=@('paperagent-retriever','paperagent-prompt','opea-service@llm'); if($t.framework -eq 'OPEA' -and ((@($t.flow) -join '|') -eq ($expected -join '|'))){exit 0}else{exit 1} } catch { exit 1 }"
 if not errorlevel 1 (
   set "OPEA_GATEWAY_URL=http://127.0.0.1:7008"
-  echo [OK] OPEA MegaService detected. Cloud UI will use the OPEA pipeline.
+  echo [OK] PaperAgent OPEA topology detected. Cloud UI will use the OPEA pipeline.
 ) else (
-  echo [INFO] OPEA MegaService is not running. Cloud UI will use compatibility mode.
+  echo [INFO] PaperAgent OPEA MegaService is not running. Cloud UI will use compatibility mode.
 )
 
 echo [0/5] Stopping previous local project services...
