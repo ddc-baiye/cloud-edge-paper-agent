@@ -14,7 +14,7 @@ services:
       LOGFLAG: "${LOGFLAG:-False}"
     volumes:
       - ../chunks:/app/CLOUD/chunks:ro
-      - paperagent-extra-chunks:/app/CLOUD/extra_chunks
+      - ../extra_chunks:/app/CLOUD/extra_chunks:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7011/v1/health_check', timeout=3)"]
       interval: 10s
@@ -100,6 +100,3 @@ services:
       retries: 12
       start_period: 10s
     restart: unless-stopped
-
-volumes:
-  paperagent-extra-chunks:
