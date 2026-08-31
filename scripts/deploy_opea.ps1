@@ -19,6 +19,7 @@ $opeaDir = Join-Path $root 'CLOUD\opea'
 $composeFile = Join-Path $opeaDir 'docker-compose.yml'
 $envExample = Join-Path $opeaDir '.env.example'
 $envFile = Join-Path $opeaDir '.env'
+$extraChunksDir = Join-Path $root 'CLOUD\extra_chunks\lunwen'
 
 function Write-Step([string]$Text) {
     Write-Host "`n==> $Text" -ForegroundColor Cyan
@@ -45,10 +46,28 @@ function Resolve-FirstNonEmpty([string[]]$Values) {
 
 function Normalize-OpeaEndpoint([string]$Endpoint) {
     $value = $Endpoint.Trim().TrimEnd('/')
+
+    foreach ($suffix in @('/v1/chat/completions', '/chat/completions')) {
+        if ($value.EndsWith($suffix, [StringComparison]::OrdinalIgnoreCase)) {
+            $value = $value.Substring(0, $value.Length - $suffix.Length).TrimEnd('/')
+            break
+        }
+    }
+
     if ($value.EndsWith('/v1', [StringComparison]::OrdinalIgnoreCase)) {
         $value = $value.Substring(0, $value.Length - 3).TrimEnd('/')
     }
     return $value
+}
+
+function Assert-HttpEndpoint([string]$Endpoint) {
+    $uri = $null
+    if (-not [Uri]::TryCreate($Endpoint, [UriKind]::Absolute, [ref]$uri)) {
+        throw "Invalid LLM endpoint: $Endpoint"
+    }
+    if ($uri.Scheme -notin @('http', 'https')) {
+        throw 'LLM endpoint must use http:// or https://.'
+    }
 }
 
 function Escape-DotEnv([string]$Value) {
@@ -117,7 +136,7 @@ $key = Resolve-FirstNonEmpty @(
 
 if (-not $NonInteractive) {
     if ([string]::IsNullOrWhiteSpace($endpoint)) {
-        $endpoint = (Read-Host 'Enter your OpenAI-compatible LLM endpoint (for example, provider root URL)').Trim()
+        $endpoint = (Read-Host 'Enter your OpenAI-compatible LLM endpoint').Trim()
     }
     if ([string]::IsNullOrWhiteSpace($model)) {
         $model = (Read-Host 'Enter your cloud LLM model ID').Trim()
@@ -141,14 +160,17 @@ $opeaEndpoint = Normalize-OpeaEndpoint $endpoint
 if ([string]::IsNullOrWhiteSpace($opeaEndpoint)) {
     throw 'The supplied LLM endpoint is invalid.'
 }
+Assert-HttpEndpoint $opeaEndpoint
 
 Write-Step 'Preparing local OPEA configuration'
+New-Item -ItemType Directory -Force -Path $extraChunksDir | Out-Null
 $template = Get-Content -LiteralPath $envExample -Raw -Encoding UTF8
 $template = [regex]::Replace($template, '(?m)^LLM_ENDPOINT=.*$', 'LLM_ENDPOINT=' + (Escape-DotEnv $opeaEndpoint))
 $template = [regex]::Replace($template, '(?m)^LLM_MODEL_ID=.*$', 'LLM_MODEL_ID=' + (Escape-DotEnv $model))
 $template = [regex]::Replace($template, '(?m)^OPENAI_API_KEY=.*$', 'OPENAI_API_KEY=' + (Escape-DotEnv $key))
 [IO.File]::WriteAllText($envFile, $template, (New-Object Text.UTF8Encoding($false)))
 Write-Host '[OK] CLOUD/opea/.env created. The file is git-ignored.' -ForegroundColor Green
+Write-Host '[OK] Shared runtime paper directory prepared: CLOUD/extra_chunks/lunwen' -ForegroundColor Green
 Write-Host "[OK] OPEA LLM endpoint: $opeaEndpoint" -ForegroundColor Green
 Write-Host "[OK] OPEA model ID: $model" -ForegroundColor Green
 
@@ -202,7 +224,7 @@ if (($actualFlow -join '|') -ne ($expectedFlow -join '|')) {
 Write-Host "[OK] OPEA flow: $($actualFlow -join ' -> ')" -ForegroundColor Green
 
 Write-Step 'Running OPEA RAG smoke test'
-$payload = @{ text = 'Explain how PaperAgent combines edge privacy with cloud literature intelligence.' } | ConvertTo-Json
+$payload = @{ text = 'How does an edge-cloud academic assistant protect privacy while using cloud literature retrieval?' } | ConvertTo-Json
 $response = Invoke-RestMethod `
     -Uri 'http://127.0.0.1:7008/v1/paperagent' `
     -Method Post `
