@@ -91,7 +91,7 @@ The deployment workflow will:
 6. Verify that **both** OpenVINO model directories contain the required IR files.
 7. Create a local `CLOUD/config.yaml` from the safe template.
 8. Create the Python 3.11 environment and install locked dependencies.
-9. Run `npm ci` for the Vue frontend.
+9. Install Vue frontend dependencies (`npm ci` when a lockfile is present; otherwise `npm install`).
 10. Verify OpenVINO/NPU availability and required project assets.
 11. Run a sensitive-data scan.
 12. Start PaperAgent and expose `http://localhost:5000/`.
