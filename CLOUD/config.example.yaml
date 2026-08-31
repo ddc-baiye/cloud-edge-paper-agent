@@ -1,7 +1,11 @@
+# PaperAgent local cloud configuration template.
+# Keep provider-specific values empty in the public competition repository.
+# deploy.bat can populate them from user input or environment variables.
+
 llm:
-  base_url: "https://api.deepseek.com"
+  base_url: ""
   api_key: ""
-  model: "deepseek-v4-flash"
+  model: ""
   disable_thinking: true
   temperature: 0.2
   request_timeout: 3600

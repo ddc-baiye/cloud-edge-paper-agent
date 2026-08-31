@@ -1,0 +1,118 @@
+name: Competition CI
+
+on:
+  push:
+    branches:
+      - main
+      - opea-cloud-integration
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  static-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate Python syntax
+        run: |
+          python -m compileall -q CLOUD/src CLOUD/opea
+          python -m py_compile EDGE/main_npu.py
+
+      - name: Validate PowerShell syntax
+        shell: pwsh
+        run: |
+          $hasErrors = $false
+          Get-ChildItem -Path scripts -Filter *.ps1 -Recurse | ForEach-Object {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $_.FullName,
+              [ref]$tokens,
+              [ref]$parseErrors
+            ) | Out-Null
+
+            if ($parseErrors.Count -gt 0) {
+              Write-Host "PowerShell syntax errors in $($_.FullName)" -ForegroundColor Red
+              $parseErrors | ForEach-Object { Write-Host $_.Message -ForegroundColor Red }
+              $hasErrors = $true
+            }
+          }
+
+          if ($hasErrors) {
+            exit 1
+          }
+
+      - name: Verify provider-neutral configuration templates
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          cloud = Path('CLOUD/config.example.yaml').read_text(encoding='utf-8')
+          required_cloud = [
+              '  base_url: ""',
+              '  api_key: ""',
+              '  model: ""',
+          ]
+          for item in required_cloud:
+              if item not in cloud:
+                  raise SystemExit(f'Cloud config template must keep provider setting empty: {item}')
+
+          opea = Path('CLOUD/opea/.env.example').read_text(encoding='utf-8')
+          required_opea = [
+              'LLM_ENDPOINT=',
+              'LLM_MODEL_ID=',
+              'OPENAI_API_KEY=',
+          ]
+          for item in required_opea:
+              if item not in opea:
+                  raise SystemExit(f'OPEA env template is missing: {item}')
+
+          forbidden = [
+              'api.deepseek.com',
+              'api.openai.com',
+              'openrouter.ai/api',
+          ]
+          combined = cloud + '\n' + opea
+          for value in forbidden:
+              if value in combined:
+                  raise SystemExit(f'Provider-specific endpoint found in public config template: {value}')
+
+          print('[OK] Provider-neutral config templates verified.')
+          PY
+
+      - name: Validate OPEA Docker Compose
+        run: |
+          docker compose version
+          docker compose \
+            --env-file CLOUD/opea/.env.example \
+            -f CLOUD/opea/docker-compose.yml \
+            config > /tmp/paperagent-compose.yml
+          test -s /tmp/paperagent-compose.yml
+
+      - name: Build Vue frontend
+        working-directory: EDGE/aithesis
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Run tracked-source sensitive-data scan
+        shell: pwsh
+        run: |
+          ./scripts/scan_sensitive.ps1 -ProjectRoot $PWD -TrackedSourceOnly

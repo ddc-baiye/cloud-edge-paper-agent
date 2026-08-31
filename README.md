@@ -1,191 +1,277 @@
-# PaperAgent — Competition Edition
+# PaperAgent — AI for Good OPEA Competition Edition
 
-PaperAgent is an edge-cloud academic assistant. It combines local OpenVINO inference for privacy-sensitive writing assistance with an optional cloud workflow for paper retrieval, document parsing, and literature-oriented question answering.
+PaperAgent is an **OPEA-based edge-cloud enterprise academic document assistant**. It combines privacy-sensitive local OpenVINO inference on an AI PC with an OPEA MicroService/MegaService cloud pipeline for literature retrieval and grounded academic question answering.
 
-This repository is prepared for competition submission. Credentials, private development data, real paper corpora, machine-specific backups, runtime logs, model weights, and tunnel configuration are intentionally excluded.
+This repository is prepared for the **AI for Good challenge on generative AI applications for enterprise scenarios using OPEA**. Credentials, provider-specific defaults, private development data, real paper corpora, machine-specific backups, runtime logs, model weights, and tunnel configuration are intentionally excluded.
+
+## Competition positioning
+
+PaperAgent separates workloads according to privacy and compute characteristics:
+
+- **Edge privacy layer** — grammar checking and academic polishing run locally with Qwen3 on Intel NPU; academic translation runs locally with HY-MT on CPU.
+- **OPEA enterprise cloud layer** — academic retrieval and grounded Q&A are decomposed into OPEA MicroServices and composed through `ServiceOrchestrator` as a PaperAgent MegaService.
+- **Document ingestion layer** — PDF ingestion supports MinerU with PyMuPDF fallback; runtime documents and generated paper records are excluded from Git.
+
+The edge service is intentionally not forced into the OPEA runtime. OPEA is used where modular, cloud-native composition is most valuable: the enterprise knowledge workflow.
+
+## OPEA cloud architecture
+
+```text
+                              Enterprise / Cloud
+
+Academic Question
+      |
+      v
+PaperAgent OPEA MegaService :7008
+      |
+      |  OPEA ServiceOrchestrator
+      v
+PaperAgent Retriever MicroService :7011
+      |  ServiceType.RETRIEVER
+      |  output: OPEA SearchedDoc
+      v
+PaperAgent Prompt MicroService :7012
+      |  ServiceType.PROMPT_TEMPLATE
+      |  output: ChatCompletionRequest
+      v
+Official OPEA LLM TextGen :9000
+      |  ServiceType.LLM
+      |  OpeaTextGenService
+      v
+Grounded Literature Answer
+
+
+                               AI PC / Edge
+
+Academic Draft
+      |
+      +--> Qwen3 8B INT4 OpenVINO --> Intel NPU --> Grammar / Polish
+      |
+      +--> HY-MT1.5 1.8B INT4 OpenVINO --> CPU --> Translation
+```
+
+This is a real OPEA composition:
+
+1. `CLOUD/opea/retriever_service.py` registers a custom OPEA `ServiceType.RETRIEVER` MicroService.
+2. The retriever emits the standard OPEA `SearchedDoc` model.
+3. `CLOUD/opea/prompt_service.py` registers a custom OPEA `ServiceType.PROMPT_TEMPLATE` MicroService and converts retrieved evidence into a chat-native request.
+4. `opea/llm-textgen` provides the official OPEA LLM MicroService and connects to a **user-supplied** OpenAI-compatible endpoint.
+5. `CLOUD/opea/megaservice.py` uses OPEA `ServiceOrchestrator` to form the runtime DAG:
+
+```text
+paperagent-retriever -> paperagent-prompt -> opea-service@llm
+```
+
+6. The MegaService exposes `/v1/paperagent` and `/v1/topology`.
+7. The existing Gradio cloud UI uses the MegaService first and automatically falls back to the compatibility path when OPEA is unavailable.
+
+Detailed OPEA documentation is in [`CLOUD/opea/README.md`](CLOUD/opea/README.md).
 
 ## Main capabilities
 
-- **Edge writing assistant**: grammar checking and academic polishing with a local Qwen3 OpenVINO model on Intel NPU.
-- **Local translation**: academic translation with a local HY-MT1.5 1.8B INT4 OpenVINO model on CPU.
-- **Cloud paper assistant**: Gradio-based paper retrieval and grounded question answering through a user-supplied OpenAI-compatible LLM endpoint.
-- **PDF ingestion**: optional MinerU integration, with PyMuPDF fallback where applicable.
-- **Unified local entry point**: Nginx routes the Vue frontend, edge API, and cloud UI behind `http://localhost:5000/`.
-- **Bilingual UI**: Chinese and English interface support.
+- OPEA enterprise RAG: MicroService + ServiceOrchestrator + MegaService.
+- Academic paper retrieval over the sanitized competition corpus/runtime document store.
+- Academic prompt composition as an OPEA `PROMPT_TEMPLATE` MicroService.
+- Grounded literature Q&A through the official OPEA LLM TextGen service.
+- Qwen3 OpenVINO grammar checking and academic polishing on Intel NPU.
+- HY-MT1.5 1.8B INT4 OpenVINO translation on CPU.
+- Optional MinerU PDF ingestion with PyMuPDF fallback.
+- Vue/Vite + Flask + Gradio behind a unified Nginx entry.
+- Chinese/English interface support.
 
-## Architecture
+## One-click deployment
+
+### Target environment
+
+For the complete competition demo:
+
+- Windows 10/11 x64
+- Intel Core Ultra platform with a working Intel NPU driver
+- Docker Desktop with the Docker Compose plugin for the OPEA cloud stack
+- Internet access during first deployment
+- At least **15 GB free disk space recommended** during first model preparation
+
+Run:
+
+```powershell
+.\deploy.bat
+```
+
+Default deployment prepares both:
 
 ```text
-Browser
-  |
-  v
-Nginx :5000
-  |----------------------|----------------------|
-  v                      v                      v
-Vue/Vite :5173      Edge Flask :5001      Cloud Gradio :7007
-                         |                      |
-              |----------|----------|           v
-              v                     v     Paper retrieval + LLM
-     Qwen3 8B OpenVINO       HY-MT1.5 1.8B
-        Intel NPU           OpenVINO / CPU
+AI-PC / Edge runtime
+  + Qwen3 OpenVINO / NPU
+  + HY-MT OpenVINO / CPU
+  + Vue + Flask + Gradio + Nginx
+
+OPEA Cloud runtime
+  + PaperAgent Retriever MicroService
+  + PaperAgent Prompt MicroService
+  + Official OPEA LLM TextGen
+  + PaperAgent MegaService
+```
+
+If Docker/Compose is not ready during the default deployment, the Edge deployment continues and OPEA is skipped with an explicit warning. After Docker Desktop is ready, run `deploy.bat -OPEAOnly`.
+
+### Deployment modes
+
+```powershell
+# Edge + OPEA cloud
+.\deploy.bat
+
+# Edge / AI-PC only
+.\deploy.bat -EdgeOnly
+
+# OPEA cloud only
+.\deploy.bat -OPEAOnly
+
+# Prepare configuration/dependencies without starting services
+.\deploy.bat -SkipStart
+
+# Require both OpenVINO model directories to already exist locally
+.\deploy.bat -SkipModelDownload
+
+# CI/non-interactive mode
+.\deploy.bat -NonInteractive
+```
+
+## User-supplied cloud LLM configuration
+
+The public repository contains **no default LLM provider endpoint, model ID, or API key**.
+
+For a full/OPEA deployment, the script prompts for:
+
+1. OpenAI-compatible LLM endpoint
+2. Model ID
+3. API key
+
+For non-interactive deployment:
+
+```powershell
+$env:PAPERAGENT_LLM_ENDPOINT = "https://<YOUR_PROVIDER_HOST>"
+$env:PAPERAGENT_LLM_MODEL_ID = "<YOUR_MODEL_ID>"
+$env:PAPERAGENT_LLM_API_KEY = "<YOUR_API_KEY>"
+.\deploy.bat -NonInteractive
+```
+
+`PAPERAGENT_LLM_ENDPOINT` may be supplied with or without a trailing `/v1`; both the OPEA path and compatibility path normalize it to an OpenAI-compatible `/v1/chat/completions` endpoint.
+
+Optional MinerU configuration:
+
+```powershell
+$env:MINERU_API_TOKEN = "<YOUR_MINERU_TOKEN>"
+```
+
+Credentials are written only to local git-ignored runtime configuration files:
+
+```text
+CLOUD/config.yaml
+CLOUD/opea/.env
 ```
 
 ## Required local models
-
-PaperAgent uses **two local models**. Both are required for the complete competition demo:
 
 | Model | Purpose | Runtime | Local path |
 | --- | --- | --- | --- |
 | Qwen3 8B INT4 OpenVINO | Grammar checking and academic polishing | Intel NPU | `models/Qwen3-8b-ov-npu/` |
 | HY-MT1.5 1.8B INT4 OpenVINO | Academic translation | CPU | `models/HY-MT1.5-1.8B-int4-ov/` |
 
-The deployment script prepares both automatically:
+The deployment script downloads Qwen3 as a pre-converted OpenVINO INT4 model and prepares HY-MT as INT4 OpenVINO IR. Model weights are runtime assets and are never committed.
 
-1. Qwen3 is downloaded as a pre-converted OpenVINO INT4 model from `OpenVINO/Qwen3-8B-int4-ov`.
-2. HY-MT is sourced from `tencent/HY-MT1.5-1.8B` and converted locally to INT4 OpenVINO IR with the current Optimum Intel/OpenVINO exporter.
+## Verification
 
-For environments where the team publishes a pre-converted HY-MT OpenVINO repository, set `PAPERAGENT_HYMT_OV_REPO`; deployment will download that repository directly instead of performing the conversion.
+After deployment:
 
-Model weights are runtime assets. They are ignored by Git and must not be committed to the competition repository.
+```powershell
+.\verify_new_computer.bat
+```
+
+The verifier checks the Edge runtime. When `CLOUD/opea/.env` exists, it additionally checks:
+
+- Docker and Docker Compose
+- Retriever `:7011`
+- Prompt Builder `:7012`
+- OPEA LLM `:9000`
+- MegaService `:7008`
+- OPEA topology
+- one OPEA RAG query
+
+Manual topology endpoint:
+
+```text
+http://localhost:7008/v1/topology
+```
+
+Expected flow:
+
+```text
+paperagent-retriever -> paperagent-prompt -> opea-service@llm
+```
+
+## Runtime URLs and ports
+
+| Component | Port |
+| --- | ---: |
+| Unified Nginx UI entry | 5000 |
+| Edge Flask API | 5001 |
+| Vue/Vite frontend | 5173 |
+| Cloud Gradio UI | 7007 |
+| OPEA MegaService | 7008 |
+| OPEA Retriever | 7011 |
+| OPEA Prompt Builder | 7012 |
+| Official OPEA LLM TextGen | 9000 |
+
+Main local UI:
+
+```text
+http://localhost:5000/
+```
+
+`start_all_services.bat` detects the local OPEA MegaService health endpoint before setting `OPEA_GATEWAY_URL`. If OPEA is unavailable, the Gradio UI starts in compatibility mode instead of falsely reporting OPEA mode.
 
 ## Competition data policy
 
-Only a small synthetic retrieval record is included:
+Only a small synthetic paper record is included:
 
 ```text
 CLOUD/chunks/lunwen/demo_paper.jsonl
 ```
 
-The development paper corpus is not part of this release. See `DATA_POLICY.md` and `SECURITY.md` before publishing or submitting the repository.
-
-## One-click deployment
-
-### Target environment
-
-- Windows 10/11 x64
-- Intel Core Ultra platform with a working Intel NPU driver
-- Internet access for dependency/model download during first deployment
-- At least **15 GB of free disk space recommended** during first deployment because the HY-MT source checkpoint is downloaded temporarily before INT4 OpenVINO conversion
-
-### Start
-
-Double-click:
-
-```text
-deploy.bat
-```
-
-or run:
-
-```powershell
-.\deploy.bat
-```
-
-The deployment workflow will:
-
-1. Install or locate `uv`.
-2. Install or locate Node.js LTS.
-3. Download Nginx 1.30.1 when absent.
-4. Download the Qwen3 8B INT4 OpenVINO model.
-5. Download and convert HY-MT1.5 1.8B to INT4 OpenVINO IR, or download a pre-converted repository when an override is configured.
-6. Verify that **both** OpenVINO model directories contain the required IR files.
-7. Create a local `CLOUD/config.yaml` from the safe template.
-8. Create the Python 3.11 environment and install locked dependencies.
-9. Install Vue frontend dependencies (`npm ci` when a lockfile is present; otherwise `npm install`).
-10. Verify OpenVINO/NPU availability and required project assets.
-11. Run a sensitive-data scan.
-12. Start PaperAgent and expose `http://localhost:5000/`.
-
-After model preparation, the expected local layout is:
-
-```text
-models/
-├─ Qwen3-8b-ov-npu/
-│  ├─ openvino_model.xml
-│  └─ openvino_model.bin
-└─ HY-MT1.5-1.8B-int4-ov/
-   ├─ openvino_model.xml
-   └─ openvino_model.bin
-```
-
-### Optional deployment variables
-
-You can avoid interactive credential input by setting environment variables before deployment:
-
-```powershell
-$env:PAPERAGENT_LLM_API_KEY = "your-key"
-$env:MINERU_API_TOKEN = "your-token"
-.\deploy.bat
-```
-
-`DEEPSEEK_API_KEY` is also accepted as an LLM-key fallback. Credentials are written only to the ignored local file `CLOUD/config.yaml`.
-
-Model source overrides are also supported:
-
-```powershell
-# Optional: replace the default Qwen OpenVINO repository
-$env:PAPERAGENT_QWEN_OV_REPO = "OpenVINO/Qwen3-8B-int4-ov"
-
-# Optional: replace the source HY-MT repository used for local conversion
-$env:PAPERAGENT_HYMT_SOURCE_REPO = "tencent/HY-MT1.5-1.8B"
-
-# Optional: if you publish your already-converted HY-MT OpenVINO model,
-# set this and deployment will download it directly instead of converting.
-$env:PAPERAGENT_HYMT_OV_REPO = "YOUR_ACCOUNT/HY-MT1.5-1.8B-int4-ov"
-```
-
-Useful options:
-
-```powershell
-# Prepare everything without starting services
-.\deploy.bat -SkipStart
-
-# Do not download or convert models; require BOTH models to already exist locally
-.\deploy.bat -SkipModelDownload
-
-# CI/non-interactive deployment
-.\deploy.bat -NonInteractive
-```
-
-## Manual start and verification
-
-After a successful deployment:
-
-```text
-start_all_services.bat
-verify_new_computer.bat
-```
-
-The verification script treats both Qwen3 and HY-MT OpenVINO IR files as required assets.
-
-Default local ports:
-
-| Component | Port |
-| --- | ---: |
-| Unified Nginx entry | 5000 |
-| Edge Flask API | 5001 |
-| Vue/Vite frontend | 5173 |
-| Cloud Gradio service | 7007 |
+The original development corpus is not part of this release. Runtime uploads are stored only in ignored/runtime directories. See `DATA_POLICY.md` and `SECURITY.md`.
 
 ## Repository layout
 
 ```text
-CLOUD/                  cloud paper retrieval and Gradio UI
-EDGE/                   local OpenVINO edge service and Vue frontend
-nginx/                  reverse-proxy template
-scripts/                deployment, validation, sanitization scripts
-deploy.bat               one-click competition deployment
-start_all_services.bat   service launcher
-DATA_POLICY.md           publication/data rules
-SECURITY.md              credential handling rules
+CLOUD/
+├─ src/                     Gradio UI, compatibility path, PDF workflow
+├─ chunks/lunwen/           synthetic competition record only
+└─ opea/
+   ├─ retriever_service.py  custom OPEA RETRIEVER MicroService
+   ├─ prompt_service.py     custom OPEA PROMPT_TEMPLATE MicroService
+   ├─ megaservice.py        OPEA ServiceOrchestrator / MegaService
+   ├─ docker-compose.yml    OPEA cloud topology
+   ├─ Dockerfile            custom PaperAgent OPEA service image
+   └─ .env.example          safe provider-neutral template
+
+EDGE/                       local OpenVINO edge service and Vue frontend
+nginx/                      reverse-proxy template
+scripts/                    deployment, verification and sanitization scripts
+models/README.md            runtime model layout only; no weights
+deploy.bat                  unified Edge + OPEA deployment entry
+verify_new_computer.bat     integrated deployment verification
+DATA_POLICY.md              publication/data rules
+SECURITY.md                 credential handling rules
 ```
 
-## Security checklist before submission
+## Security check before submission
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\scan_sensitive.ps1 -TrackedSourceOnly
 ```
 
+The OPEA `.env`, cloud API keys, MinerU tokens, local configuration, runtime PDF files, generated paper chunks, model weights and caches are excluded from Git.
+
 ## Third-party components
 
-PaperAgent downloads or uses third-party software/models under their respective licenses. Review the license terms of OpenVINO, Qwen3, HY-MT, Nginx, and other dependencies before redistribution. The competition repository intentionally excludes model weight files.
+PaperAgent integrates OPEA, OpenVINO, Qwen3, HY-MT, Nginx and other third-party components under their respective licenses. Review each upstream license before redistribution. The competition repository intentionally excludes third-party model weight files.
