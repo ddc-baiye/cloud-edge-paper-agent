@@ -14,10 +14,15 @@ Question
   v
 PaperAgent OPEA MegaService :7008
   |
+  |  OPEA ServiceOrchestrator
   v
 PaperAgent Retriever MicroService :7011
   |  ServiceType.RETRIEVER
   |  output: OPEA SearchedDoc
+  v
+PaperAgent Prompt MicroService :7012
+  |  ServiceType.PROMPT_TEMPLATE
+  |  output: OPEA ChatCompletionRequest
   v
 Official OPEA LLM TextGen :9000
   |  ServiceType.LLM
@@ -26,19 +31,20 @@ Official OPEA LLM TextGen :9000
 Grounded academic answer
 ```
 
-The MegaService uses OPEA `ServiceOrchestrator` to build the runtime DAG:
+The MegaService builds this runtime DAG:
 
 ```text
-paperagent-retriever -> opea-service@llm
+paperagent-retriever -> paperagent-prompt -> opea-service@llm
 ```
 
-The custom retriever produces the standard OPEA `SearchedDoc` data model. The official OPEA LLM component accepts that document directly and builds the RAG prompt before invoking the configured OpenAI-compatible model endpoint.
+The custom retriever produces the standard OPEA `SearchedDoc` data model. The custom prompt component turns that retrieval result into OPEA's standard OpenAI-style `ChatCompletionRequest`. This explicitly sends the official OPEA TextGen component through `/chat/completions`, which is compatible with modern OpenAI-compatible chat providers.
 
 ## Components
 
 | Component | OPEA role | Port | Implementation |
 | --- | --- | ---: | --- |
 | `paperagent-retriever` | `ServiceType.RETRIEVER` | 7011 | Custom PaperAgent OPEA MicroService |
+| `paperagent-prompt` | `ServiceType.PROMPT_TEMPLATE` | 7012 | Custom PaperAgent OPEA MicroService |
 | `opea-llm` | `ServiceType.LLM` | 9000 | Official `opea/llm-textgen` / `OpeaTextGenService` |
 | `paperagent-megaservice` | `ServiceType.GATEWAY`, MegaService | 7008 | OPEA `ServiceOrchestrator` |
 
@@ -84,7 +90,7 @@ curl http://localhost:7008/v1/topology
 Expected flow:
 
 ```text
-paperagent-retriever -> opea-service@llm
+paperagent-retriever -> paperagent-prompt -> opea-service@llm
 ```
 
 Call the PaperAgent MegaService:
@@ -120,10 +126,10 @@ The current competition integration deliberately keeps the topology small and au
 ```text
 DataPrep -> Embedding -> Vector Store
                        |
-Question -> Retriever -> Rerank -> Guardrail -> LLM
-                                  ^
-                                  |
-                         ServiceOrchestrator
+Question -> Retriever -> Rerank -> Prompt -> Guardrail -> LLM
+                                           ^
+                                           |
+                                  ServiceOrchestrator
 ```
 
 Good next-stage additions are OPEA DataPrep for document ingestion, an embedding/vector retrieval backend for larger enterprise corpora, and OPEA Guardrails for prompt-injection/PII controls.
