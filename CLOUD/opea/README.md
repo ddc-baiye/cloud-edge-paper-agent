@@ -81,7 +81,17 @@ Inspect services:
 docker compose ps
 ```
 
+All four containers have OPEA HTTP health checks. The MegaService waits until the Retriever, Prompt Builder and LLM services are healthy before it starts.
+
 ## Verify the OPEA topology
+
+OPEA health endpoint:
+
+```bash
+curl http://localhost:7008/v1/health_check
+```
+
+PaperAgent topology endpoint:
 
 ```bash
 curl http://localhost:7008/v1/topology
@@ -101,7 +111,13 @@ curl -X POST http://localhost:7008/v1/paperagent \
   -d '{"text":"How can an edge-cloud academic assistant protect private drafts while using cloud literature intelligence?"}'
 ```
 
-The response includes the generated `answer`, the framework marker `OPEA`, and the pipeline component list.
+Run the repository smoke test:
+
+```bash
+python smoke_test.py
+```
+
+The smoke test verifies `/v1/topology`, checks the exact OPEA DAG, calls `/v1/paperagent`, validates the `OPEA` framework marker and rejects an empty model answer.
 
 ## Connect the existing Gradio cloud UI
 
