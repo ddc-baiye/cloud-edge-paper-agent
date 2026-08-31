@@ -1,0 +1,58 @@
+llm:
+  base_url: "https://api.deepseek.com"
+  api_key: ""
+  model: "deepseek-v4-flash"
+  disable_thinking: true
+  temperature: 0.2
+  request_timeout: 3600
+  max_retries: 3
+  max_context_length: 100000
+  enable_context_limit: true
+
+chunking:
+  max_chars: 1800
+  min_chars: 400
+  overlap_chars: 120
+  prefer_headings: true
+  keep_toc: false
+  normalize_whitespace: true
+  language_hint: "zh_en"
+
+standards:
+  lunwen:
+    language: "en"
+    original_language: "en"
+    vector_collection: "lunwen_chunks"
+    fulltext_index: "lunwen_fulltext"
+    description: "学术论文"
+    abbreviation: "LUNWEN"
+    keywords:
+      - "论文"
+      - "学术论文"
+      - "paper"
+    chunk_override: true
+    rel_override: false
+    virtual_chunk: false
+    enabled: true
+
+io:
+  input_dir: "../input"
+  scan_all: true
+  includes: []
+  output_dir: "../out"
+  output_file: "graph.jsonl"
+
+chunk:
+  out_dir: "../chunks"
+  override: true
+  concurrency: 16
+  file_concurrency: 8
+
+runtime:
+  concurrency: 4
+  log_level: "info"
+  log_file: "./out/run.log"
+  max_input_chars: 100000
+
+mineru:
+  api_token: ""

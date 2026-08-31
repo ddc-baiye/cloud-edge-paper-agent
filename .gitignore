@@ -1,0 +1,54 @@
+# Python environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+
+# Secrets and local-only configuration
+CLOUD/config.yaml
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime logs, uploads and generated data
+logs/
+*.log
+uploads/
+CLOUD/input/
+CLOUD/out/
+CLOUD/uploads/
+CLOUD/extra_chunks/
+CLOUD/chunks/**
+!CLOUD/chunks/lunwen/
+!CLOUD/chunks/lunwen/demo_paper.jsonl
+
+# Local model weights and accelerator caches
+/models/
+!models/README.md
+/.npu_cache/
+EDGE/ac8cc3352e06c3/
+
+# Frontend dependencies and build output
+EDGE/aithesis/node_modules/
+EDGE/aithesis/dist/
+
+# Bundled third-party runtimes and generated state
+nginx_install/
+natapp/
+nginx_install/**/logs/
+
+# Local snapshots / intranet backups
+*.bak
+*.bak_*
+*.bak*
+*_intranet_*
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
