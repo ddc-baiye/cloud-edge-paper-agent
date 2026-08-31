@@ -30,6 +30,10 @@ PaperAgent Retriever MicroService :7011
       |  ServiceType.RETRIEVER
       |  output: OPEA SearchedDoc
       v
+PaperAgent Prompt MicroService :7012
+      |  ServiceType.PROMPT_TEMPLATE
+      |  output: OPEA ChatCompletionRequest
+      v
 Official OPEA LLM TextGen :9000
       |  ServiceType.LLM
       |  OpeaTextGenService
@@ -50,10 +54,11 @@ This is a real OPEA composition rather than a wrapper label:
 
 1. `CLOUD/opea/retriever_service.py` registers a custom OPEA `ServiceType.RETRIEVER` MicroService.
 2. The retriever emits the standard OPEA `SearchedDoc` model.
-3. `opea/llm-textgen` provides the official OPEA LLM MicroService and connects to a user-supplied OpenAI-compatible endpoint.
-4. `CLOUD/opea/megaservice.py` uses OPEA `ServiceOrchestrator` to form the runtime DAG `paperagent-retriever -> opea-service@llm`.
-5. The PaperAgent MegaService exposes `/v1/paperagent` and an observable `/v1/topology` endpoint.
-6. The existing Gradio cloud UI uses the MegaService when `OPEA_GATEWAY_URL` is configured and falls back to the compatibility path if OPEA is unavailable.
+3. `CLOUD/opea/prompt_service.py` registers a custom OPEA `ServiceType.PROMPT_TEMPLATE` MicroService and converts retrieved evidence into the standard OPEA/OpenAI `ChatCompletionRequest` model.
+4. `opea/llm-textgen` provides the official OPEA LLM MicroService and connects to a user-supplied OpenAI-compatible chat endpoint.
+5. `CLOUD/opea/megaservice.py` uses OPEA `ServiceOrchestrator` to form the runtime DAG `paperagent-retriever -> paperagent-prompt -> opea-service@llm`.
+6. The PaperAgent MegaService exposes `/v1/paperagent` and an observable `/v1/topology` endpoint.
+7. The existing Gradio cloud UI uses the MegaService when `OPEA_GATEWAY_URL` is configured and falls back to the compatibility path if OPEA is unavailable.
 
 Detailed OPEA deployment instructions are in [`CLOUD/opea/README.md`](CLOUD/opea/README.md).
 
@@ -61,6 +66,7 @@ Detailed OPEA deployment instructions are in [`CLOUD/opea/README.md`](CLOUD/opea
 
 - **OPEA enterprise RAG**: MicroService + ServiceOrchestrator + MegaService cloud architecture.
 - **Academic paper retrieval**: custom PaperAgent OPEA retriever over the sanitized competition corpus/runtime document store.
+- **Academic prompt composition**: custom OPEA prompt component converts retrieval evidence to a chat-native request.
 - **Grounded literature Q&A**: official OPEA LLM TextGen connected to an OpenAI-compatible model endpoint.
 - **Edge writing assistant**: grammar checking and academic polishing with Qwen3 OpenVINO on Intel NPU.
 - **Local translation**: HY-MT1.5 1.8B INT4 OpenVINO on CPU.
@@ -115,6 +121,7 @@ $env:OPEA_GATEWAY_URL = "http://localhost:7008"
 | --- | ---: |
 | PaperAgent OPEA MegaService | 7008 |
 | PaperAgent OPEA Retriever | 7011 |
+| PaperAgent OPEA Prompt Builder | 7012 |
 | Official OPEA LLM TextGen | 9000 |
 
 ## Quick start — AI PC / edge demo
@@ -189,6 +196,7 @@ CLOUD/
 ├─ chunks/lunwen/           synthetic competition record only
 └─ opea/
    ├─ retriever_service.py  custom OPEA RETRIEVER MicroService
+   ├─ prompt_service.py     custom OPEA PROMPT_TEMPLATE MicroService
    ├─ megaservice.py        OPEA ServiceOrchestrator / MegaService
    ├─ docker-compose.yml    enterprise OPEA cloud topology
    ├─ Dockerfile            custom PaperAgent OPEA service image
