@@ -13,7 +13,7 @@ $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $excludedPrefixes = @(
     '.git\', '.venv\', 'EDGE\aithesis\node_modules\', 'models\',
     'nginx_install\', 'logs\', 'uploads\', 'CLOUD\out\', 'CLOUD\input\',
-    'CLOUD\extra_chunks\'
+    'CLOUD\extra_input\', 'CLOUD\extra_chunks\'
 )
 $excludedRelativeFiles = @('CLOUD\config.yaml')
 
