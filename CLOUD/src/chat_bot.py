@@ -59,9 +59,27 @@ def _llm_headers(cfg: Dict[str, Any]) -> Dict[str, str]:
     return headers
 
 
+def _normalize_llm_endpoint(value: str) -> str:
+    endpoint = str(value or '').strip().rstrip('/')
+    if endpoint.lower().endswith('/v1'):
+        endpoint = endpoint[:-3].rstrip('/')
+    return endpoint
+
+
+def _chat_completions_url(cfg: Dict[str, Any]) -> str:
+    endpoint = _normalize_llm_endpoint(cfg.get('llm', {}).get('base_url') or '')
+    if not endpoint:
+        raise ValueError('LLM endpoint is empty')
+    return f'{endpoint}/v1/chat/completions'
+
+
 def _llm_enabled(cfg: Dict[str, Any]) -> bool:
     llm = cfg.get('llm', {})
-    return bool(str(llm.get('base_url') or '').strip() and str(llm.get('model') or '').strip() and str(llm.get('api_key') or '').strip())
+    return bool(
+        _normalize_llm_endpoint(llm.get('base_url') or '')
+        and str(llm.get('model') or '').strip()
+        and str(llm.get('api_key') or '').strip()
+    )
 
 
 def _chat(cfg: Dict[str, Any], messages: List[Dict[str, str]], temperature: float = 0.1) -> str:
@@ -70,8 +88,8 @@ def _chat(cfg: Dict[str, Any], messages: List[Dict[str, str]], temperature: floa
     if str(llm.get('model', '')).lower().startswith('deepseek-v4') and llm.get('disable_thinking', True):
         payload['thinking'] = {'type': 'disabled'}
     timeout = float(llm.get('request_timeout', 3600))
-    with httpx.Client(base_url=str(llm['base_url']).rstrip('/'), headers=_llm_headers(cfg), timeout=timeout) as client:
-        response = client.post('/chat/completions', json=payload)
+    with httpx.Client(headers=_llm_headers(cfg), timeout=timeout) as client:
+        response = client.post(_chat_completions_url(cfg), json=payload)
         response.raise_for_status()
         data = response.json()
     message = data.get('choices', [{}])[0].get('message', {})
@@ -84,8 +102,8 @@ def _chat_stream(cfg: Dict[str, Any], messages: List[Dict[str, str]], temperatur
     if str(llm.get('model', '')).lower().startswith('deepseek-v4') and llm.get('disable_thinking', True):
         payload['thinking'] = {'type': 'disabled'}
     timeout = float(llm.get('request_timeout', 3600))
-    with httpx.Client(base_url=str(llm['base_url']).rstrip('/'), headers=_llm_headers(cfg), timeout=timeout) as client:
-        with client.stream('POST', '/chat/completions', json=payload) as response:
+    with httpx.Client(headers=_llm_headers(cfg), timeout=timeout) as client:
+        with client.stream('POST', _chat_completions_url(cfg), json=payload) as response:
             response.raise_for_status()
             for line in response.iter_lines():
                 if not line:
@@ -132,8 +150,8 @@ def _fallback_answer(question: str, selected: List[Dict[str, Any]], lang: str) -
         title = paper.get('title', 'Untitled')
         summary = paper.get('summary', '')
         lines.append(f'{i}. **{title}**\n\n{summary}')
-    intro = ('当前未配置云端 LLM Key，以下内容直接基于检索到的论文摘要展示：\n\n' if lang != 'en'
-             else 'No cloud LLM key is configured. The following is shown directly from the retrieved paper summaries:\n\n')
+    intro = ('当前未配置完整的云端 LLM endpoint/model/key，以下内容直接基于检索到的论文摘要展示：\n\n' if lang != 'en'
+             else 'The cloud LLM endpoint/model/key is not fully configured. The following is shown directly from the retrieved paper summaries:\n\n')
     return intro + '\n\n'.join(lines)
 
 
