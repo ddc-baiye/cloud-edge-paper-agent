@@ -1,0 +1,7 @@
+# Edge Environment - Python 3.11+ (recommend conda with PyTorch)
+# Install: pip install -r requirements-edge.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+openvino-genai>=24.5.0
+flask>=3.0.0
+flask-cors>=4.0.0
+numpy>=1.26.0
