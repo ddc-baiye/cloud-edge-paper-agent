@@ -163,7 +163,7 @@ try {
 
     if ($SkipStart) {
         Write-Host '[OK] OPEA configuration is ready. Container start was skipped.' -ForegroundColor Green
-        exit 0
+        return
     }
 
     Write-Step 'Starting OPEA MicroServices and MegaService'
