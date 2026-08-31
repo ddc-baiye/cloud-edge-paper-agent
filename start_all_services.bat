@@ -15,7 +15,7 @@ set "NGINX_DIR=%ROOT_DIR%\nginx_install\nginx-1.30.1"
 set "LOG_DIR=%ROOT_DIR%\logs"
 set "PYTHON_ENV=%ROOT_DIR%\.venv\Scripts\pythonw.exe"
 set "CONFIG_SCRIPT=%ROOT_DIR%\scripts\configure_project.ps1"
-set "OPEA_GATEWAY_URL=http://127.0.0.1:7008"
+set "OPEA_GATEWAY_URL="
 
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
 
@@ -45,6 +45,15 @@ if errorlevel 1 (
   echo [ERROR] Project path configuration failed.
   pause
   exit /b 1
+)
+
+echo [Config] Checking OPEA MegaService...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:7008/health' -TimeoutSec 2; if($r.StatusCode -ge 200 -and $r.StatusCode -lt 300){exit 0}else{exit 1} } catch { exit 1 }"
+if not errorlevel 1 (
+  set "OPEA_GATEWAY_URL=http://127.0.0.1:7008"
+  echo [OK] OPEA MegaService detected. Cloud UI will use the OPEA pipeline.
+) else (
+  echo [INFO] OPEA MegaService is not running. Cloud UI will use compatibility mode.
 )
 
 echo [0/5] Stopping previous local project services...
@@ -83,8 +92,11 @@ echo   EDGE frontend error:  edge_frontend_error.log
 echo   Cloud UI:             cloud_backend.log
 echo   Nginx:                %NGINX_DIR%\logs\
 echo.
-echo OPEA gateway target: %OPEA_GATEWAY_URL%
-echo If OPEA is unavailable, the cloud UI falls back to the compatibility path.
+if defined OPEA_GATEWAY_URL (
+  echo OPEA gateway: %OPEA_GATEWAY_URL%
+) else (
+  echo OPEA gateway: not active - compatibility mode
+)
 echo Access URL: http://localhost:5000/
 echo =======================================================
 
