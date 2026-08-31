@@ -15,6 +15,12 @@ services:
     volumes:
       - ../chunks:/app/CLOUD/chunks:ro
       - paperagent-extra-chunks:/app/CLOUD/extra_chunks
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7011/v1/health_check', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     restart: unless-stopped
 
   paperagent-prompt:
@@ -29,6 +35,12 @@ services:
       PAPERAGENT_PROMPT_PORT: "7012"
       PAPERAGENT_PROMPT_CONTEXT_CHARS: "${PAPERAGENT_PROMPT_CONTEXT_CHARS:-14000}"
       LOGFLAG: "${LOGFLAG:-False}"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7012/v1/health_check', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     restart: unless-stopped
 
   opea-llm:
@@ -45,6 +57,12 @@ services:
       no_proxy: "${no_proxy:-localhost,127.0.0.1,paperagent-retriever,paperagent-prompt,opea-llm,paperagent-megaservice}"
       http_proxy: "${http_proxy:-}"
       https_proxy: "${https_proxy:-}"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9000/v1/health_check', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
     restart: unless-stopped
 
   paperagent-megaservice:
@@ -69,9 +87,18 @@ services:
       http_proxy: "${http_proxy:-}"
       https_proxy: "${https_proxy:-}"
     depends_on:
-      - paperagent-retriever
-      - paperagent-prompt
-      - opea-llm
+      paperagent-retriever:
+        condition: service_healthy
+      paperagent-prompt:
+        condition: service_healthy
+      opea-llm:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7008/v1/health_check', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     restart: unless-stopped
 
 volumes:
