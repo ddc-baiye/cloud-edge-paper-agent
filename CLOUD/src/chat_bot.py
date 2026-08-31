@@ -61,7 +61,15 @@ def _llm_headers(cfg: Dict[str, Any]) -> Dict[str, str]:
 
 def _normalize_llm_endpoint(value: str) -> str:
     endpoint = str(value or '').strip().rstrip('/')
-    if endpoint.lower().endswith('/v1'):
+    lowered = endpoint.lower()
+
+    for suffix in ('/v1/chat/completions', '/chat/completions'):
+        if lowered.endswith(suffix):
+            endpoint = endpoint[:-len(suffix)].rstrip('/')
+            lowered = endpoint.lower()
+            break
+
+    if lowered.endswith('/v1'):
         endpoint = endpoint[:-3].rstrip('/')
     return endpoint
 
