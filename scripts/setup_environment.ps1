@@ -15,8 +15,9 @@ $venv = Join-Path $root '.venv'
 $venvPython = Join-Path $venv 'Scripts\python.exe'
 $lockFile = Join-Path $root 'requirements-lock.txt'
 $frontend = Join-Path $root 'EDGE\aithesis'
+$frontendPackage = Join-Path $frontend 'package.json'
 
-Write-Host 'PaperAgent new-computer setup' -ForegroundColor Cyan
+Write-Host 'PaperAgent competition environment setup' -ForegroundColor Cyan
 Write-Host "Project: $root"
 
 $uv = Get-Command uv -ErrorAction SilentlyContinue
@@ -26,7 +27,7 @@ uv is not installed.
 Install it first with one of these commands:
   winget install --id=astral-sh.uv -e
   powershell -ExecutionPolicy Bypass -c "irm https://astral.sh/uv/install.ps1 | iex"
-Then reopen PowerShell and run setup_new_computer.bat again.
+Then reopen PowerShell and rerun deploy.bat.
 '@
 }
 
@@ -45,32 +46,36 @@ if ($RecreateVenv -and (Test-Path -LiteralPath $venv)) {
 if (-not (Test-Path -LiteralPath $venvPython)) {
     Write-Host '[1/4] Creating Python 3.11 virtual environment...'
     & $uv.Source venv $venv --python $Python
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Failed to create the Python virtual environment.'
-    }
+    if ($LASTEXITCODE -ne 0) { throw 'Failed to create the Python virtual environment.' }
 } else {
     Write-Host '[1/4] Existing virtual environment found.'
 }
 
 Write-Host '[2/4] Installing locked Python dependencies...'
 & $uv.Source pip sync $lockFile --python $venvPython
-if ($LASTEXITCODE -ne 0) {
-    throw 'Failed to install Python dependencies.'
-}
+if ($LASTEXITCODE -ne 0) { throw 'Failed to install Python dependencies.' }
 
 if (-not $SkipFrontend) {
     $npm = Get-Command npm -ErrorAction SilentlyContinue
     if (-not $npm) {
         throw 'npm is not installed. Install Node.js 20.19 or newer, then run this script again.'
     }
+    if (-not (Test-Path -LiteralPath $frontendPackage)) {
+        throw "Frontend package.json is missing: $frontendPackage"
+    }
 
-    Write-Host '[3/4] Installing frontend dependencies with npm ci...'
+    Write-Host '[3/4] Installing competition frontend dependencies...'
     Push-Location $frontend
     try {
-        & $npm.Source ci
-        if ($LASTEXITCODE -ne 0) {
-            throw 'npm ci failed.'
+        $packageLock = Join-Path $frontend 'package-lock.json'
+        if (Test-Path -LiteralPath $packageLock) {
+            Write-Host 'Using package-lock.json with npm ci.'
+            & $npm.Source ci
+        } else {
+            Write-Host 'No package-lock.json is bundled; using npm install for the sanitized competition UI.'
+            & $npm.Source install --no-audit --no-fund
         }
+        if ($LASTEXITCODE -ne 0) { throw 'Frontend dependency installation failed.' }
     } finally {
         Pop-Location
     }
@@ -80,13 +85,9 @@ if (-not $SkipFrontend) {
 
 Write-Host '[4/4] Configuring paths and checking the environment...'
 & (Join-Path $PSScriptRoot 'configure_project.ps1') -ProjectRoot $root
-if ($LASTEXITCODE -ne 0) {
-    throw 'Project path configuration failed.'
-}
+if ($LASTEXITCODE -ne 0) { throw 'Project path configuration failed.' }
 
 & (Join-Path $PSScriptRoot 'verify_environment.ps1') -ProjectRoot $root
-if ($LASTEXITCODE -ne 0) {
-    throw 'Environment verification failed. Review the failed checks above.'
-}
+if ($LASTEXITCODE -ne 0) { throw 'Environment verification failed. Review the failed checks above.' }
 
 Write-Host "`nSetup completed. Start the project with start_all_services.bat." -ForegroundColor Green
