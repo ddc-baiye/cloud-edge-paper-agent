@@ -2,6 +2,7 @@
 
 Topology:
     PaperAgent Retriever (custom OPEA MicroService)
+        -> PaperAgent Prompt Builder (custom OPEA MicroService)
         -> OPEA LLM TextGen (official OPEA MicroService)
         -> PaperAgent MegaService response
 
@@ -38,6 +39,8 @@ def _env_int(name: str, default: int) -> int:
 GATEWAY_PORT = _env_int("PAPERAGENT_OPEA_GATEWAY_PORT", 7008)
 RETRIEVER_HOST = os.getenv("PAPERAGENT_RETRIEVER_HOST", "paperagent-retriever")
 RETRIEVER_PORT = _env_int("PAPERAGENT_RETRIEVER_PORT", 7011)
+PROMPT_HOST = os.getenv("PAPERAGENT_PROMPT_HOST", "paperagent-prompt")
+PROMPT_PORT = _env_int("PAPERAGENT_PROMPT_PORT", 7012)
 LLM_HOST = os.getenv("PAPERAGENT_LLM_HOST", "opea-llm")
 LLM_PORT = _env_int("PAPERAGENT_LLM_PORT", 9000)
 DEFAULT_MODEL = os.getenv("LLM_MODEL_ID", "")
@@ -53,11 +56,14 @@ class PaperAgentRequest(BaseModel):
 class PaperAgentResponse(BaseModel):
     answer: str
     framework: str = "OPEA"
-    pipeline: list[str] = [
-        "paperagent-retriever",
-        "opea-service@llm",
-        "paperagent-megaservice",
-    ]
+    pipeline: list[str] = Field(
+        default_factory=lambda: [
+            "paperagent-retriever",
+            "paperagent-prompt",
+            "opea-service@llm",
+            "paperagent-megaservice",
+        ]
+    )
     raw: Optional[Dict[str, Any]] = None
 
 
@@ -67,6 +73,15 @@ retriever = MicroService(
     host=RETRIEVER_HOST,
     port=RETRIEVER_PORT,
     endpoint="/v1/retrieval",
+    use_remote_service=True,
+)
+
+prompt_builder = MicroService(
+    name="paperagent-prompt",
+    service_type=ServiceType.PROMPT_TEMPLATE,
+    host=PROMPT_HOST,
+    port=PROMPT_PORT,
+    endpoint="/v1/prompt",
     use_remote_service=True,
 )
 
@@ -80,8 +95,9 @@ llm = MicroService(
 )
 
 orchestrator = ServiceOrchestrator()
-orchestrator.add(retriever).add(llm)
-orchestrator.flow_to(retriever, llm)
+orchestrator.add(retriever).add(prompt_builder).add(llm)
+orchestrator.flow_to(retriever, prompt_builder)
+orchestrator.flow_to(prompt_builder, llm)
 
 
 def _extract_answer(payload: Any) -> str:
@@ -161,13 +177,19 @@ async def topology():
                 "implementation": "custom PaperAgent OPEA MicroService",
             },
             {
+                "name": "paperagent-prompt",
+                "type": "PROMPT_TEMPLATE",
+                "endpoint": f"http://{PROMPT_HOST}:{PROMPT_PORT}/v1/prompt",
+                "implementation": "custom PaperAgent OPEA MicroService",
+            },
+            {
                 "name": "opea-service@llm",
                 "type": "LLM",
                 "endpoint": f"http://{LLM_HOST}:{LLM_PORT}/v1/chat/completions",
                 "implementation": "official OPEA LLM TextGen MicroService",
             },
         ],
-        "flow": ["paperagent-retriever", "opea-service@llm"],
+        "flow": ["paperagent-retriever", "paperagent-prompt", "opea-service@llm"],
     }
 
 
