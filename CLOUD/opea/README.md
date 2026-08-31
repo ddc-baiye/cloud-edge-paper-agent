@@ -82,9 +82,9 @@ For OPEA deployment, the user must provide all three cloud LLM settings. The rep
 Interactive deployment prompts for these values. For non-interactive deployment, set:
 
 ```powershell
-$env:PAPERAGENT_LLM_ENDPOINT = "https://your-provider.example"
-$env:PAPERAGENT_LLM_MODEL_ID = "your-model-id"
-$env:PAPERAGENT_LLM_API_KEY = "your-api-key"
+$env:PAPERAGENT_LLM_ENDPOINT = "https://<YOUR_PROVIDER_HOST>"
+$env:PAPERAGENT_LLM_MODEL_ID = "<YOUR_MODEL_ID>"
+$env:PAPERAGENT_LLM_API_KEY = "<YOUR_API_KEY>"
 .\deploy.bat -NonInteractive
 ```
 
@@ -104,9 +104,9 @@ cp .env.example .env
 Fill in your own OpenAI-compatible values:
 
 ```dotenv
-LLM_ENDPOINT=https://your-provider.example
-LLM_MODEL_ID=your-model-id
-OPENAI_API_KEY=your-api-key
+LLM_ENDPOINT=https://<YOUR_PROVIDER_HOST>
+LLM_MODEL_ID=<YOUR_MODEL_ID>
+OPENAI_API_KEY=<YOUR_API_KEY>
 ```
 
 Then run:
@@ -153,13 +153,9 @@ On the Windows competition machine, the integrated verifier also checks OPEA whe
 
 ## Connect the Gradio cloud UI
 
-`start_all_services.bat` automatically points the local Gradio UI to:
+`start_all_services.bat` detects the local OPEA MegaService health endpoint before enabling OPEA mode.
 
-```text
-http://127.0.0.1:7008
-```
-
-When the OPEA MegaService is healthy, questions use the OPEA pipeline first. If OPEA is unavailable, the UI automatically falls back to the compatibility path so the local demo remains usable.
+When the OPEA MegaService is healthy, questions use the OPEA pipeline first. If OPEA is unavailable, the UI starts directly in compatibility mode so the local demo remains usable.
 
 ## Security
 
