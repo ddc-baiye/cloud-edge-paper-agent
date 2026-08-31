@@ -149,18 +149,18 @@ For a full/OPEA deployment, the script prompts for:
 For non-interactive deployment:
 
 ```powershell
-$env:PAPERAGENT_LLM_ENDPOINT = "https://your-provider.example"
-$env:PAPERAGENT_LLM_MODEL_ID = "your-model-id"
-$env:PAPERAGENT_LLM_API_KEY = "your-api-key"
+$env:PAPERAGENT_LLM_ENDPOINT = "https://<YOUR_PROVIDER_HOST>"
+$env:PAPERAGENT_LLM_MODEL_ID = "<YOUR_MODEL_ID>"
+$env:PAPERAGENT_LLM_API_KEY = "<YOUR_API_KEY>"
 .\deploy.bat -NonInteractive
 ```
 
-`PAPERAGENT_LLM_ENDPOINT` may be supplied with or without a trailing `/v1`; the OPEA deployment helper normalizes the endpoint for the official OPEA TextGen service.
+`PAPERAGENT_LLM_ENDPOINT` may be supplied with or without a trailing `/v1`; both the OPEA path and compatibility path normalize it to an OpenAI-compatible `/v1/chat/completions` endpoint.
 
 Optional MinerU configuration:
 
 ```powershell
-$env:MINERU_API_TOKEN = "your-token"
+$env:MINERU_API_TOKEN = "<YOUR_MINERU_TOKEN>"
 ```
 
 Credentials are written only to local git-ignored runtime configuration files:
@@ -228,7 +228,7 @@ Main local UI:
 http://localhost:5000/
 ```
 
-`start_all_services.bat` automatically points the Gradio cloud UI to `http://127.0.0.1:7008`. When OPEA is unavailable, the UI falls back to the compatibility path.
+`start_all_services.bat` detects the local OPEA MegaService health endpoint before setting `OPEA_GATEWAY_URL`. If OPEA is unavailable, the Gradio UI starts in compatibility mode instead of falsely reporting OPEA mode.
 
 ## Competition data policy
 
