@@ -1,0 +1,55 @@
+# Git and local environments
+.git
+.github
+.venv
+__pycache__
+*.py[cod]
+
+# Secrets and local-only configuration
+CLOUD/config.yaml
+CLOUD/opea/.env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime/generated/private data
+logs
+uploads
+CLOUD/input
+CLOUD/out
+CLOUD/uploads
+CLOUD/extra_input
+CLOUD/extra_chunks
+CLOUD/chunks/**
+!CLOUD/chunks/lunwen/
+!CLOUD/chunks/lunwen/demo_paper.jsonl
+
+# Local model weights / accelerators
+models
+.npu_cache
+EDGE/ac8cc3352e06c3
+
+# Frontend generated content
+EDGE/aithesis/node_modules
+EDGE/aithesis/dist
+
+# Bundled runtimes and deprecated tunnel assets
+nginx_install
+natapp
+
+# Backups / intranet snapshots
+*.bak
+*.bak_*
+*.bak*
+*_intranet_*
+
+# Editor / OS files
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+desktop.ini
