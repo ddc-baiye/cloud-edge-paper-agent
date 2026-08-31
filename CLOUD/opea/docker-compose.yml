@@ -17,6 +17,20 @@ services:
       - paperagent-extra-chunks:/app/CLOUD/extra_chunks
     restart: unless-stopped
 
+  paperagent-prompt:
+    build:
+      context: ../..
+      dockerfile: CLOUD/opea/Dockerfile
+    container_name: paperagent-opea-prompt
+    command: ["python", "/app/CLOUD/opea/prompt_service.py"]
+    ports:
+      - "${PAPERAGENT_PROMPT_PORT:-7012}:7012"
+    environment:
+      PAPERAGENT_PROMPT_PORT: "7012"
+      PAPERAGENT_PROMPT_CONTEXT_CHARS: "${PAPERAGENT_PROMPT_CONTEXT_CHARS:-14000}"
+      LOGFLAG: "${LOGFLAG:-False}"
+    restart: unless-stopped
+
   opea-llm:
     image: "${OPEA_LLM_IMAGE:-opea/llm-textgen:latest}"
     container_name: paperagent-opea-llm
@@ -28,7 +42,7 @@ services:
       LLM_MODEL_ID: "${LLM_MODEL_ID}"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
       LOGFLAG: "${LOGFLAG:-False}"
-      no_proxy: "${no_proxy:-localhost,127.0.0.1}"
+      no_proxy: "${no_proxy:-localhost,127.0.0.1,paperagent-retriever,paperagent-prompt,opea-llm,paperagent-megaservice}"
       http_proxy: "${http_proxy:-}"
       https_proxy: "${https_proxy:-}"
     restart: unless-stopped
@@ -45,12 +59,18 @@ services:
       PAPERAGENT_OPEA_GATEWAY_PORT: "7008"
       PAPERAGENT_RETRIEVER_HOST: paperagent-retriever
       PAPERAGENT_RETRIEVER_PORT: "7011"
+      PAPERAGENT_PROMPT_HOST: paperagent-prompt
+      PAPERAGENT_PROMPT_PORT: "7012"
       PAPERAGENT_LLM_HOST: opea-llm
       PAPERAGENT_LLM_PORT: "9000"
       LLM_MODEL_ID: "${LLM_MODEL_ID}"
       LOGFLAG: "${LOGFLAG:-False}"
+      no_proxy: "${no_proxy:-localhost,127.0.0.1,paperagent-retriever,paperagent-prompt,opea-llm,paperagent-megaservice}"
+      http_proxy: "${http_proxy:-}"
+      https_proxy: "${https_proxy:-}"
     depends_on:
       - paperagent-retriever
+      - paperagent-prompt
       - opea-llm
     restart: unless-stopped
 
