@@ -4,9 +4,7 @@ This directory contains the **OPEA-native cloud orchestration layer** used by th
 
 The local edge workflow remains responsible for privacy-sensitive writing assistance on the user's AI PC. The cloud workflow is decomposed into OPEA MicroServices and composed as an OPEA MegaService for enterprise literature retrieval and grounded question answering.
 
-## Why OPEA is used here
-
-PaperAgent maps its cloud RAG workflow to OPEA's modular service model instead of wrapping the existing Python function with an OPEA label:
+## OPEA topology
 
 ```text
 Question
@@ -14,7 +12,6 @@ Question
   v
 PaperAgent OPEA MegaService :7008
   |
-  |  OPEA ServiceOrchestrator
   v
 PaperAgent Retriever MicroService :7011
   |  ServiceType.RETRIEVER
@@ -22,7 +19,7 @@ PaperAgent Retriever MicroService :7011
   v
 PaperAgent Prompt MicroService :7012
   |  ServiceType.PROMPT_TEMPLATE
-  |  output: OPEA ChatCompletionRequest
+  |  output: ChatCompletionRequest
   v
 Official OPEA LLM TextGen :9000
   |  ServiceType.LLM
@@ -31,13 +28,13 @@ Official OPEA LLM TextGen :9000
 Grounded academic answer
 ```
 
-The MegaService builds this runtime DAG:
+The MegaService uses OPEA `ServiceOrchestrator` to build the runtime DAG:
 
 ```text
 paperagent-retriever -> paperagent-prompt -> opea-service@llm
 ```
 
-The custom retriever produces the standard OPEA `SearchedDoc` data model. The custom prompt component turns that retrieval result into OPEA's standard OpenAI-style `ChatCompletionRequest`. This explicitly sends the official OPEA TextGen component through `/chat/completions`, which is compatible with modern OpenAI-compatible chat providers.
+The retriever and prompt builder are PaperAgent domain components registered as OPEA MicroServices. The LLM layer uses the official OPEA TextGen service and can connect to a user-supplied OpenAI-compatible endpoint.
 
 ## Components
 
@@ -50,48 +47,79 @@ The custom retriever produces the standard OPEA `SearchedDoc` data model. The cu
 
 Only the synthetic competition corpus is shipped in Git. Runtime PDF-derived records remain in ignored/runtime storage.
 
-## Start with Docker Compose
+## Recommended deployment
 
-Copy the safe environment template:
+On the Windows competition machine, use the repository-level deployment entry:
+
+```powershell
+.\deploy.bat
+```
+
+The default mode prepares the AI-PC edge runtime and, when Docker Desktop is ready, also deploys the OPEA cloud stack.
+
+Deployment modes:
+
+```powershell
+# Edge + OPEA cloud
+.\deploy.bat
+
+# AI-PC / edge only
+.\deploy.bat -EdgeOnly
+
+# OPEA cloud only
+.\deploy.bat -OPEAOnly
+
+# Prepare configuration/dependencies without starting services
+.\deploy.bat -SkipStart
+```
+
+For OPEA deployment, the user must provide all three cloud LLM settings. The repository does not contain provider defaults:
+
+- `LLM endpoint`
+- `LLM model ID`
+- `LLM API key`
+
+Interactive deployment prompts for these values. For non-interactive deployment, set:
+
+```powershell
+$env:PAPERAGENT_LLM_ENDPOINT = "https://your-provider.example"
+$env:PAPERAGENT_LLM_MODEL_ID = "your-model-id"
+$env:PAPERAGENT_LLM_API_KEY = "your-api-key"
+.\deploy.bat -NonInteractive
+```
+
+The deployment script creates `CLOUD/opea/.env` locally. That file is git-ignored and must never be committed.
+
+`PAPERAGENT_LLM_ENDPOINT` may be entered with or without a trailing `/v1`; the OPEA deployment helper normalizes it for the official OPEA TextGen service.
+
+## Manual Docker Compose deployment
+
+If you want to manage the OPEA stack directly:
 
 ```bash
 cd CLOUD/opea
 cp .env.example .env
 ```
 
-Edit `.env` and provide your OpenAI-compatible endpoint, model ID and API key:
+Fill in your own OpenAI-compatible values:
 
 ```dotenv
-LLM_ENDPOINT=https://api.deepseek.com
+LLM_ENDPOINT=https://your-provider.example
 LLM_MODEL_ID=your-model-id
-OPENAI_API_KEY=your-key
+OPENAI_API_KEY=your-api-key
 ```
 
-`LLM_ENDPOINT` should be the provider root URL **without a trailing `/v1`**, because the official OPEA TextGen service appends the OpenAI-compatible API prefix.
-
-Start the OPEA cloud pipeline:
+Then run:
 
 ```bash
 docker compose --env-file .env up -d --build
 ```
 
-Inspect services:
+## Verification
 
-```bash
-docker compose ps
-```
+OPEA services expose the standard OPEA health endpoints. The deployment script waits for all four services and then validates the topology plus one RAG request.
 
-All four containers have OPEA HTTP health checks. The MegaService waits until the Retriever, Prompt Builder and LLM services are healthy before it starts.
-
-## Verify the OPEA topology
-
-OPEA health endpoint:
-
-```bash
-curl http://localhost:7008/v1/health_check
-```
-
-PaperAgent topology endpoint:
+Manual topology check:
 
 ```bash
 curl http://localhost:7008/v1/topology
@@ -103,7 +131,7 @@ Expected flow:
 paperagent-retriever -> paperagent-prompt -> opea-service@llm
 ```
 
-Call the PaperAgent MegaService:
+Call the MegaService:
 
 ```bash
 curl -X POST http://localhost:7008/v1/paperagent \
@@ -111,49 +139,33 @@ curl -X POST http://localhost:7008/v1/paperagent \
   -d '{"text":"How can an edge-cloud academic assistant protect private drafts while using cloud literature intelligence?"}'
 ```
 
-Run the repository smoke test:
+Run the Python smoke test:
 
 ```bash
 python smoke_test.py
 ```
 
-The smoke test verifies `/v1/topology`, checks the exact OPEA DAG, calls `/v1/paperagent`, validates the `OPEA` framework marker and rejects an empty model answer.
-
-## Connect the existing Gradio cloud UI
-
-Run the normal PaperAgent cloud UI with:
-
-```bash
-export OPEA_GATEWAY_URL=http://localhost:7008
-```
-
-On Windows PowerShell:
+On the Windows competition machine, the integrated verifier also checks OPEA when `CLOUD/opea/.env` exists:
 
 ```powershell
-$env:OPEA_GATEWAY_URL = "http://localhost:7008"
+.\verify_new_computer.bat
 ```
 
-When this variable is present, `CLOUD/src/app.py` sends academic questions to the OPEA MegaService first. If the OPEA cloud service is temporarily unavailable, the UI automatically falls back to the original compatibility path so the demo remains usable.
+## Connect the Gradio cloud UI
 
-## Enterprise extension path
-
-The current competition integration deliberately keeps the topology small and auditable. It can be extended with standard OPEA components without changing the edge API:
+`start_all_services.bat` automatically points the local Gradio UI to:
 
 ```text
-DataPrep -> Embedding -> Vector Store
-                       |
-Question -> Retriever -> Rerank -> Prompt -> Guardrail -> LLM
-                                           ^
-                                           |
-                                  ServiceOrchestrator
+http://127.0.0.1:7008
 ```
 
-Good next-stage additions are OPEA DataPrep for document ingestion, an embedding/vector retrieval backend for larger enterprise corpora, and OPEA Guardrails for prompt-injection/PII controls.
+When the OPEA MegaService is healthy, questions use the OPEA pipeline first. If OPEA is unavailable, the UI automatically falls back to the compatibility path so the local demo remains usable.
 
 ## Security
 
-- `.env` is local-only and must never be committed.
-- The repository contains no LLM API key or MinerU token.
-- Model credentials are injected through environment variables.
+- `.env` is local-only and git-ignored.
+- No LLM provider endpoint, model ID, API key, or MinerU token is hardcoded in the public configuration templates.
+- Credentials are injected through interactive deployment or environment variables.
 - Original/private paper corpora are excluded from the competition repository.
+- Runtime uploads and generated chunks are ignored.
 - See the root `SECURITY.md` and `DATA_POLICY.md`.
