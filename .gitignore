@@ -5,6 +5,7 @@ __pycache__/
 
 # Secrets and local-only configuration
 CLOUD/config.yaml
+CLOUD/opea/.env
 .env
 .env.*
 !.env.example
