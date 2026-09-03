@@ -10,7 +10,7 @@ openai==2.41.1
 openvino==2026.2.0
 openvino-genai==2026.2.0.0
 psutil==7.2.2
-pymupdf==1.27.2.3
+pypdf==5.9.0
 pyyaml==6.0.3
 requests==2.34.2
 setuptools==70.2.0
