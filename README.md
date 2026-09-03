@@ -35,13 +35,7 @@ PaperAgent lowers the privacy and infrastructure barriers of AI-assisted academi
 
 ## Architecture
 
-### Product architecture
-
-![PaperAgent cloud-edge architecture](docs/architecture-overview.webp)
-
-### Technical architecture
-
-![PaperAgent technical architecture](docs/technical-architecture.svg)
+PaperAgent separates privacy-sensitive local writing assistance from cloud-side literature retrieval and knowledge orchestration. The edge service runs local OpenVINO models on the AI PC, while the cloud side uses OPEA MicroServices and MegaService orchestration for document processing, retrieval, prompt construction, and grounded generation.
 
 The edge service is intentionally not forced into the OPEA runtime. OPEA is used where modular service composition is most valuable: literature retrieval, prompt construction, LLM integration, and enterprise knowledge orchestration.
 
@@ -252,8 +246,7 @@ scripts/
 
 docs/
 ├─ demo-guide.md
-├─ architecture-overview.svg
-└─ technical-architecture.svg
+└─ architecture-overview.webp   competition architecture diagram
 
 LICENSE                         Apache License 2.0
 technical-report.md             competition technical report source
