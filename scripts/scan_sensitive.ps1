@@ -17,13 +17,13 @@ $excludedPrefixes = @(
 )
 $excludedRelativeFiles = @('CLOUD\config.yaml')
 
-$patterns = @(
+$contentPatterns = @(
     @{ Name = 'API key'; Regex = '(?i)\bsk-[A-Za-z0-9_\-]{12,}' },
     @{ Name = 'JWT/token'; Regex = '\beyJ[A-Za-z0-9_\-]{12,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\b' },
     @{ Name = 'hard-coded credential'; Regex = '(?i)\b(?:api[_-]?key|api[_-]?token|authtoken|access[_-]?token|secret[_-]?key|client[_-]?secret)\b\s*[:=]\s*["'']?[A-Za-z0-9._\-]{12,}' },
-    @{ Name = 'private IPv4 address'; Regex = '\b(?:10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.(?:\d{1,3}\.)\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.(?:\d{1,3}\.)\d{1,3})\b' },
-    @{ Name = 'intranet backup marker'; Regex = '(?i)(?:bak[_-]?intranet|_intranet_)' }
+    @{ Name = 'private IPv4 address'; Regex = '\b(?:10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.(?:\d{1,3}\.)\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.(?:\d{1,3}\.)\d{1,3})\b' }
 )
+$forbiddenPathPattern = '(?i)(?:bak[_-]?intranet|_intranet_)'
 
 function Get-Relative([string]$Path) {
     return ([IO.Path]::GetFullPath($Path).Substring($root.Length).TrimStart('\', '/').Replace('/', '\'))
@@ -57,17 +57,23 @@ if ($TrackedSourceOnly -and (Get-Command git -ErrorAction SilentlyContinue) -and
 $findings = [System.Collections.Generic.List[object]]::new()
 foreach ($file in $files) {
     if (Is-Excluded $file) { continue }
+
+    $relative = (Get-Relative $file).Replace('\', '/')
+    if ($relative -match $forbiddenPathPattern) {
+        $findings.Add([pscustomobject]@{ Type = 'intranet backup filename'; File = $relative; Line = 0 })
+    }
+
     try {
         $text = Get-Content -LiteralPath $file -Raw -Encoding UTF8 -ErrorAction Stop
         if ($null -eq $text) { $text = '' }
     } catch {
         continue
     }
-    foreach ($pattern in $patterns) {
+
+    foreach ($pattern in $contentPatterns) {
         foreach ($match in [regex]::Matches([string]$text, $pattern.Regex)) {
             $before = $text.Substring(0, $match.Index)
             $line = ($before -split "`n").Count
-            $relative = (Get-Relative $file).Replace('\', '/')
             $findings.Add([pscustomobject]@{ Type = $pattern.Name; File = $relative; Line = $line })
         }
     }
