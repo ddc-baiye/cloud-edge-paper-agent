@@ -120,15 +120,17 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import yaml
 
-          manifest = yaml.safe_load(Path('models/model-manifest.yaml').read_text(encoding='utf-8'))
-          models = manifest.get('models', {})
-          for name in ('qwen3', 'hymt'):
-              if name not in models:
-                  raise SystemExit(f'Missing model manifest entry: {name}')
-              if not models[name].get('modelscope_repo'):
-                  raise SystemExit(f'Missing ModelScope repository for: {name}')
+          text = Path('models/model-manifest.yaml').read_text(encoding='utf-8')
+          required = [
+              'qwen3:',
+              'hymt:',
+              'modelscope_repo: OpenVINO/Qwen3-8B-int4-cw-ov',
+              'modelscope_repo: Tencent-Hunyuan/HY-MT1.5-1.8B',
+          ]
+          for item in required:
+              if item not in text:
+                  raise SystemExit(f'Model manifest is missing required entry: {item}')
           print('[OK] Competition model manifest verified.')
           PY
 
