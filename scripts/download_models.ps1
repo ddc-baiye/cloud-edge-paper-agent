@@ -122,7 +122,7 @@ snapshot_download(
     local_dir=r'''$Destination'''
 )
 "@
-    & $Uv.Source run --with modelscope python -c $code
+    & $Uv.Source run --python 3.11 --with modelscope python -c $code
     return ($LASTEXITCODE -eq 0)
 }
 
@@ -143,7 +143,7 @@ snapshot_download(
     local_dir=r'''$Destination'''
 )
 "@
-    & $Uv.Source run --with huggingface_hub --with hf_xet python -c $code
+    & $Uv.Source run --python 3.11 --with huggingface_hub --with hf_xet python -c $code
     return ($LASTEXITCODE -eq 0)
 }
 
@@ -180,6 +180,7 @@ function Export-HYMTToOpenVinoInt4(
     Remove-DirectoryIfExists $Destination
     Write-Host 'Converting HY-MT1.5-1.8B to OpenVINO INT4 for the PaperAgent CPU translation runtime...'
     & $Uv.Source run `
+        --python 3.11 `
         --with 'optimum-intel[openvino]' `
         --with 'transformers>=4.56,<5.0' `
         --with torch `
