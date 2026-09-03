@@ -28,8 +28,7 @@ jobs:
             technical-report.md
             technical-report.pdf
             docs/demo-guide.md
-            docs/architecture-overview.svg
-            docs/technical-architecture.svg
+            docs/architecture-overview.webp
             models/model-manifest.yaml
             scripts/download_models.ps1
             DATA_POLICY.md
