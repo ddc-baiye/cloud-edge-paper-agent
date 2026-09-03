@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, Generator, Tuple
 
-import fitz
+from pypdf import PdfReader
 
 try:
     from .pdf_parser import parse_pdf_with_mineru_stream
@@ -23,13 +23,12 @@ def _safe_name(value: str) -> str:
 
 
 def _local_extract(path: Path) -> Generator[Tuple[str, str], None, str]:
-    doc = fitz.open(str(path))
-    page_count = len(doc)
+    reader = PdfReader(str(path))
+    page_count = len(reader.pages)
     pages = []
-    for i, page in enumerate(doc):
+    for i, page in enumerate(reader.pages):
         yield '📄 正在本地解析 PDF...', f'正在处理第 {i+1}/{page_count} 页'
-        pages.append(page.get_text())
-    doc.close()
+        pages.append(page.extract_text() or '')
     return '\n\n'.join(p.strip() for p in pages if p.strip()).strip()
 
 
@@ -44,9 +43,8 @@ def process_uploaded_pdf_stream(pdf_path: Path, mineru_token: str, cfg: Dict[str
             yield '__FINAL__', f'文件大小超过 5MB（当前 {size_mb:.2f}MB）'
             return False, 'File too large'
 
-        check_doc = fitz.open(str(pdf_path))
-        page_count = len(check_doc)
-        check_doc.close()
+        reader = PdfReader(str(pdf_path))
+        page_count = len(reader.pages)
         if page_count > 20:
             yield '__FINAL__', f'文件页数超过 20 页（当前 {page_count} 页）'
             return False, 'Too many pages'
