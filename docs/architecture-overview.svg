@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#273142"/>
+    </marker>
+    <style>
+      .title{font:700 30px Arial,sans-serif;fill:#111827}.subtitle{font:400 16px Arial,sans-serif;fill:#4b5563}
+      .group{fill:#f8fafc;stroke:#94a3b8;stroke-width:2}.edge{fill:#eef6ff;stroke:#3b82f6;stroke-width:2}.cloud{fill:#f5f3ff;stroke:#7c3aed;stroke-width:2}.data{fill:#f0fdf4;stroke:#22c55e;stroke-width:2}.box{fill:#fff;stroke:#64748b;stroke-width:1.6}.txt{font:600 18px Arial,sans-serif;fill:#1f2937}.small{font:400 14px Arial,sans-serif;fill:#475569}.line{stroke:#273142;stroke-width:2.2;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1400" height="820" fill="#ffffff"/>
+  <text x="70" y="62" class="title">PaperAgent Cloud-Edge Architecture</text>
+  <text x="70" y="92" class="subtitle">Privacy-sensitive local inference + OPEA-based literature intelligence</text>
+
+  <rect x="70" y="135" rx="18" ry="18" width="1260" height="110" class="group"/>
+  <rect x="115" y="165" rx="12" ry="12" width="260" height="50" class="box"/><text x="245" y="197" text-anchor="middle" class="txt">Researcher / Reviewer</text>
+  <rect x="565" y="165" rx="12" ry="12" width="270" height="50" class="box"/><text x="700" y="197" text-anchor="middle" class="txt">Unified PaperAgent UI</text>
+  <rect x="1025" y="165" rx="12" ry="12" width="250" height="50" class="box"/><text x="1150" y="197" text-anchor="middle" class="txt">Nginx Gateway</text>
+  <path d="M375 190 H565" class="line"/><path d="M835 190 H1025" class="line"/>
+
+  <rect x="70" y="285" rx="20" ry="20" width="600" height="420" class="edge"/>
+  <text x="100" y="325" class="txt">AI PC / Edge Privacy Layer</text>
+  <text x="100" y="352" class="small">Sensitive draft processing remains local</text>
+
+  <rect x="115" y="395" rx="14" ry="14" width="230" height="88" class="box"/>
+  <text x="230" y="430" text-anchor="middle" class="txt">Qwen3-8B INT4</text>
+  <text x="230" y="457" text-anchor="middle" class="small">OpenVINO GenAI / Intel NPU</text>
+  <rect x="395" y="395" rx="14" ry="14" width="230" height="88" class="box"/>
+  <text x="510" y="430" text-anchor="middle" class="txt">HY-MT1.5-1.8B</text>
+  <text x="510" y="457" text-anchor="middle" class="small">OpenVINO INT4 / CPU</text>
+
+  <rect x="115" y="535" rx="14" ry="14" width="230" height="98" class="box"/>
+  <text x="230" y="570" text-anchor="middle" class="txt">Grammar + Polish</text>
+  <text x="230" y="598" text-anchor="middle" class="small">Academic writing assistance</text>
+  <rect x="395" y="535" rx="14" ry="14" width="230" height="98" class="box"/>
+  <text x="510" y="570" text-anchor="middle" class="txt">Translation</text>
+  <text x="510" y="598" text-anchor="middle" class="small">Dedicated multilingual model</text>
+  <path d="M230 483 V535" class="line"/><path d="M510 483 V535" class="line"/>
+
+  <rect x="730" y="285" rx="20" ry="20" width="600" height="420" class="cloud"/>
+  <text x="760" y="325" class="txt">Enterprise / OPEA Cloud Layer</text>
+  <text x="760" y="352" class="small">Modular literature retrieval and grounded generation</text>
+
+  <rect x="770" y="392" rx="13" ry="13" width="220" height="70" class="box"/>
+  <text x="880" y="423" text-anchor="middle" class="txt">Retriever</text><text x="880" y="447" text-anchor="middle" class="small">OPEA MicroService</text>
+  <rect x="1070" y="392" rx="13" ry="13" width="220" height="70" class="box"/>
+  <text x="1180" y="423" text-anchor="middle" class="txt">Prompt Builder</text><text x="1180" y="447" text-anchor="middle" class="small">OPEA MicroService</text>
+  <rect x="1070" y="520" rx="13" ry="13" width="220" height="70" class="box"/>
+  <text x="1180" y="551" text-anchor="middle" class="txt">LLM TextGen</text><text x="1180" y="575" text-anchor="middle" class="small">Official OPEA service</text>
+  <rect x="770" y="520" rx="13" ry="13" width="220" height="70" class="box"/>
+  <text x="880" y="551" text-anchor="middle" class="txt">MegaService</text><text x="880" y="575" text-anchor="middle" class="small">ServiceOrchestrator</text>
+  <path d="M990 427 H1070" class="line"/><path d="M1180 462 V520" class="line"/><path d="M1070 555 H990" class="line"/>
+
+  <rect x="845" y="625" rx="13" ry="13" width="370" height="52" class="data"/>
+  <text x="1030" y="657" text-anchor="middle" class="txt">Sanitized Paper Corpus / Runtime Documents</text>
+  <path d="M880 625 V590" class="line"/>
+
+  <path d="M700 245 V270 H370 V285" class="line"/>
+  <path d="M700 245 V270 H1030 V285" class="line"/>
+
+  <text x="70" y="770" class="small">Competition repository excludes credentials, private corpora, model weights, internal addresses, runtime uploads, and machine-specific backups.</text>
+</svg>

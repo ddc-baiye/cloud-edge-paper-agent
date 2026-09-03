@@ -28,8 +28,9 @@ CLOUD/chunks/**
 !CLOUD/chunks/lunwen/demo_paper.jsonl
 
 # Local model weights and accelerator caches
-/models/
+/models/*
 !models/README.md
+!models/model-manifest.yaml
 /.npu_cache/
 EDGE/ac8cc3352e06c3/
 

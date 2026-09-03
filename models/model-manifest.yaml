@@ -1,0 +1,31 @@
+models:
+  qwen3:
+    name: Qwen3-8B INT4 OpenVINO
+    purpose: Grammar checking, academic polishing, and local language generation
+    runtime: OpenVINO GenAI
+    device: Intel NPU
+    target_dir: models/Qwen3-8b-ov-npu
+    modelscope_repo: OpenVINO/Qwen3-8B-int4-cw-ov
+    huggingface_fallback: OpenVINO/Qwen3-8B-int4-ov
+    required_files:
+      - openvino_model.xml
+      - openvino_model.bin
+
+  hymt:
+    name: HY-MT1.5-1.8B
+    purpose: Academic translation
+    runtime: OpenVINO GenAI
+    device: CPU
+    target_dir: models/HY-MT1.5-1.8B-int4-ov
+    modelscope_repo: Tencent-Hunyuan/HY-MT1.5-1.8B
+    huggingface_fallback: tencent/HY-MT1.5-1.8B
+    preparation: Download source weights, then export locally to OpenVINO INT4
+    required_files:
+      - openvino_model.xml
+      - openvino_model.bin
+
+notes:
+  - Model weights are runtime assets and are not committed to this repository.
+  - ModelScope is the default source for competition deployment.
+  - Hugging Face remains a fallback source if ModelScope is temporarily unavailable.
+  - Repository IDs can be overridden with PAPERAGENT_QWEN_MS_REPO, PAPERAGENT_QWEN_HF_REPO, PAPERAGENT_HYMT_MS_REPO, and PAPERAGENT_HYMT_HF_REPO.

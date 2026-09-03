@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#1f2937"/></marker>
+    <style>
+      .title{font:700 30px Arial,sans-serif;fill:#111827}.subtitle{font:400 16px Arial,sans-serif;fill:#4b5563}.lane{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2}.box{fill:#fff;stroke:#64748b;stroke-width:1.7}.opea{fill:#f5f3ff;stroke:#7c3aed;stroke-width:2}.edge{fill:#eef6ff;stroke:#2563eb;stroke-width:2}.model{fill:#f0fdf4;stroke:#16a34a;stroke-width:2}.txt{font:600 17px Arial,sans-serif;fill:#1f2937}.small{font:400 13px Arial,sans-serif;fill:#475569}.line{stroke:#1f2937;stroke-width:2;fill:none;marker-end:url(#arrow)}.dash{stroke:#64748b;stroke-width:1.8;stroke-dasharray:8 6;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1400" height="820" fill="#fff"/>
+  <text x="65" y="60" class="title">PaperAgent Technical Architecture</text>
+  <text x="65" y="90" class="subtitle">OPEA service DAG, local OpenVINO runtimes, model preparation, and application integration</text>
+
+  <rect x="65" y="125" rx="18" ry="18" width="1270" height="145" class="lane"/>
+  <text x="90" y="158" class="txt">Application Layer</text>
+  <rect x="115" y="182" rx="12" ry="12" width="250" height="58" class="box"/><text x="240" y="218" text-anchor="middle" class="txt">Vue / Vite Frontend</text>
+  <rect x="455" y="182" rx="12" ry="12" width="250" height="58" class="box"/><text x="580" y="218" text-anchor="middle" class="txt">Flask Edge API</text>
+  <rect x="795" y="182" rx="12" ry="12" width="250" height="58" class="box"/><text x="920" y="218" text-anchor="middle" class="txt">Gradio Cloud UI</text>
+  <rect x="1135" y="182" rx="12" ry="12" width="150" height="58" class="box"/><text x="1210" y="218" text-anchor="middle" class="txt">Nginx</text>
+  <path d="M365 211 H455" class="line"/><path d="M705 211 H795" class="line"/><path d="M1045 211 H1135" class="line"/>
+
+  <rect x="65" y="315" rx="18" ry="18" width="600" height="365" class="edge"/>
+  <text x="90" y="350" class="txt">Edge Runtime</text>
+  <rect x="110" y="390" rx="12" ry="12" width="225" height="74" class="model"/>
+  <text x="222" y="421" text-anchor="middle" class="txt">Qwen3-8B INT4</text><text x="222" y="446" text-anchor="middle" class="small">OpenVINO GenAI / NPU</text>
+  <rect x="395" y="390" rx="12" ry="12" width="225" height="74" class="model"/>
+  <text x="507" y="421" text-anchor="middle" class="txt">HY-MT1.5-1.8B</text><text x="507" y="446" text-anchor="middle" class="small">OpenVINO INT4 / CPU</text>
+  <rect x="110" y="520" rx="12" ry="12" width="225" height="76" class="box"/>
+  <text x="222" y="552" text-anchor="middle" class="txt">Grammar / Polish</text><text x="222" y="577" text-anchor="middle" class="small">privacy-sensitive local text</text>
+  <rect x="395" y="520" rx="12" ry="12" width="225" height="76" class="box"/>
+  <text x="507" y="552" text-anchor="middle" class="txt">Translation</text><text x="507" y="577" text-anchor="middle" class="small">dedicated multilingual path</text>
+  <path d="M222 464 V520" class="line"/><path d="M507 464 V520" class="line"/>
+  <text x="110" y="642" class="small">Runtime models live under models/ and are excluded from Git.</text>
+
+  <rect x="735" y="315" rx="18" ry="18" width="600" height="365" class="opea"/>
+  <text x="760" y="350" class="txt">OPEA Runtime DAG</text>
+  <rect x="780" y="390" rx="12" ry="12" width="210" height="68" class="box"/>
+  <text x="885" y="420" text-anchor="middle" class="txt">Retriever</text><text x="885" y="444" text-anchor="middle" class="small">ServiceType.RETRIEVER</text>
+  <rect x="1080" y="390" rx="12" ry="12" width="210" height="68" class="box"/>
+  <text x="1185" y="420" text-anchor="middle" class="txt">Prompt Builder</text><text x="1185" y="444" text-anchor="middle" class="small">PROMPT_TEMPLATE</text>
+  <rect x="1080" y="515" rx="12" ry="12" width="210" height="68" class="box"/>
+  <text x="1185" y="545" text-anchor="middle" class="txt">OPEA LLM TextGen</text><text x="1185" y="569" text-anchor="middle" class="small">official OPEA service</text>
+  <rect x="780" y="515" rx="12" ry="12" width="210" height="68" class="box"/>
+  <text x="885" y="545" text-anchor="middle" class="txt">MegaService</text><text x="885" y="569" text-anchor="middle" class="small">ServiceOrchestrator</text>
+  <path d="M990 424 H1080" class="line"/><path d="M1185 458 V515" class="line"/><path d="M1080 549 H990" class="line"/>
+  <rect x="855" y="620" rx="11" ry="11" width="360" height="40" class="box"/><text x="1035" y="646" text-anchor="middle" class="small">Sanitized demo corpus / runtime document store</text>
+  <path d="M885 620 V583" class="dash"/>
+
+  <rect x="65" y="720" rx="14" ry="14" width="1270" height="68" class="lane"/>
+  <text x="90" y="748" class="txt">Model preparation</text>
+  <text x="250" y="748" class="small">ModelScope default -> Qwen3 OpenVINO IR direct download; Tencent HY-MT source download -> local OpenVINO INT4 export; Hugging Face fallback retained.</text>
+  <text x="250" y="772" class="small">Configuration, credentials, model weights, real corpora, runtime uploads, and internal network information remain outside version control.</text>
+
+  <path d="M580 270 V315" class="dash"/><path d="M920 270 V315" class="dash"/>
+</svg>

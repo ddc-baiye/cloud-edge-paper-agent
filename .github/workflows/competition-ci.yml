@@ -20,6 +20,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify competition deliverables
+        run: |
+          required=(
+            README.md
+            LICENSE
+            technical-report.md
+            technical-report.pdf
+            docs/demo-guide.md
+            docs/architecture-overview.svg
+            docs/technical-architecture.svg
+            models/model-manifest.yaml
+            scripts/download_models.ps1
+            DATA_POLICY.md
+            SECURITY.md
+          )
+          for file in "${required[@]}"; do
+            test -f "$file" || { echo "Missing required competition file: $file"; exit 1; }
+          done
+
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -95,6 +114,22 @@ jobs:
                   raise SystemExit(f'Provider-specific endpoint found in public config template: {value}')
 
           print('[OK] Provider-neutral config templates verified.')
+          PY
+
+      - name: Validate model manifest
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          manifest = yaml.safe_load(Path('models/model-manifest.yaml').read_text(encoding='utf-8'))
+          models = manifest.get('models', {})
+          for name in ('qwen3', 'hymt'):
+              if name not in models:
+                  raise SystemExit(f'Missing model manifest entry: {name}')
+              if not models[name].get('modelscope_repo'):
+                  raise SystemExit(f'Missing ModelScope repository for: {name}')
+          print('[OK] Competition model manifest verified.')
           PY
 
       - name: Validate OPEA Docker Compose
