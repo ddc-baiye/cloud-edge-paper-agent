@@ -59,11 +59,12 @@ foreach ($file in $files) {
     if (Is-Excluded $file) { continue }
     try {
         $text = Get-Content -LiteralPath $file -Raw -Encoding UTF8 -ErrorAction Stop
+        if ($null -eq $text) { $text = '' }
     } catch {
         continue
     }
     foreach ($pattern in $patterns) {
-        foreach ($match in [regex]::Matches($text, $pattern.Regex)) {
+        foreach ($match in [regex]::Matches([string]$text, $pattern.Regex)) {
             $before = $text.Substring(0, $match.Index)
             $line = ($before -split "`n").Count
             $relative = (Get-Relative $file).Replace('\', '/')
