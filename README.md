@@ -4,7 +4,7 @@ PaperAgent is an **OPEA-based cloud-edge academic intelligence agent**. It combi
 
 This repository is the public competition edition. Credentials, real research corpora, private development data, internal network configuration, machine-specific backups, runtime uploads, logs, caches, and model weights are intentionally excluded.
 
-![PaperAgent architecture](docs/architecture-overview.svg)
+![PaperAgent architecture](docs/architecture-overview.webp)
 
 ## Why PaperAgent
 
@@ -37,7 +37,7 @@ PaperAgent lowers the privacy and infrastructure barriers of AI-assisted academi
 
 ### Product architecture
 
-![PaperAgent cloud-edge architecture](docs/architecture-overview.svg)
+![PaperAgent cloud-edge architecture](docs/architecture-overview.webp)
 
 ### Technical architecture
 
