@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PIL import Image as PILImage
+from PIL import Image as PILImage, ImageDraw, ImageFont
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
@@ -109,6 +109,36 @@ def add_page_number(canvas, doc):
     canvas.drawRightString(A4[0] - 15 * mm, 10 * mm, f"Page {doc.page}")
 
 
+def prepare_architecture_for_report():
+    """Create a report-only copy of the architecture figure with pypdf terminology."""
+    target = Path("/tmp/paperagent-architecture-report.jpg")
+    with PILImage.open(ARCH) as source:
+        image = source.convert("RGB")
+
+    width, height = image.size
+    scale_x = width / 1200.0
+    scale_y = height / 800.0
+    draw = ImageDraw.Draw(image)
+
+    # The public architecture image predates the parser dependency switch.
+    # Patch only the small parser subtitle used inside the PDF report.
+    x1, y1 = int(570 * scale_x), int(332 * scale_y)
+    x2, y2 = int(660 * scale_x), int(350 * scale_y)
+    draw.rectangle((x1, y1, x2, y2), fill=(249, 250, 252))
+
+    font_size = max(8, int(10 * scale_x))
+    font = ImageFont.truetype(str(FONT_PATH), font_size)
+    label = "MinerU / pypdf"
+    bbox = draw.textbbox((0, 0), label, font=font)
+    text_width = bbox[2] - bbox[0]
+    center_x = int(615 * scale_x)
+    text_y = int(336 * scale_y)
+    draw.text((center_x - text_width / 2, text_y), label, font=font, fill=(35, 35, 35))
+
+    image.save(target, quality=88, optimize=True)
+    return target
+
+
 def build_report():
     styles = build_styles()
     story = []
@@ -152,10 +182,11 @@ def build_report():
         )
     )
 
-    with PILImage.open(ARCH) as source:
+    report_arch = prepare_architecture_for_report()
+    with PILImage.open(report_arch) as source:
         width, height = source.size
     scale = min((176 * mm) / width, (142 * mm) / height)
-    story.append(Image(str(ARCH), width=width * scale, height=height * scale))
+    story.append(Image(str(report_arch), width=width * scale, height=height * scale))
     story.append(Spacer(1, 1 * mm))
     story.append(
         Paragraph(
